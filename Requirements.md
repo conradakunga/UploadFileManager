@@ -49,4 +49,38 @@ We will build it in such a way to make it extensible so that it will be easy to 
 - Other databases - MySQL, SQLite
 - Other BLOB storage providers - [Google](https://cloud.google.com/), [Dreamhost](https://www.dreamhost.com/cloud/storage/), [Hetzner](https://www.hetzner.com/storage/object-storage/), [Heroku](https://elements.heroku.com/addons/ah-s3-object-storage-stackhero)
 
-Detailed documentation of the requirements is in  [Readme](Readme.md)
+Finally, some (preliminary) deliberate decisions
+
+### Uniqueness
+
+If you upload two files with the same name, **the system will treat them as different** and store both and give you two different IDs. We will not make any effort to detect and prevent duplicates (either by file name, or by contents)
+
+### Context
+
+Files are usually uploaded with some **context** - e.g. an upload file will belong to the logged-in user. **This component will make no effort to preserve this - that will be responsibility of the application**. The component will purely deal with the file alone.
+
+### Changes Of Settings
+
+Given we are going to support encryption and compression, it will probably be a good idea to persist whatever encryption algorithm and compression algorithm were used at the point of storage as part of the metadata. This way should we need to change them, updating existing files will be much easier. It will look repetitive, but this is an acceptable choice to balance future changes.
+
+### Hashing
+
+We will use SHA
+
+In our [next post]({% post_url 2025-04-19-designing-building-packaging-a-scalable-testable-net-open-source-component-part-3-project-setup %}) we shall setup our project and start the preliminary work.
+
+### Encryption
+
+We will use AES
+
+### Compression
+
+We will use Zip compression
+
+### File IDs
+
+We will use Guid as file IDs
+
+### Update
+
+There will be **no support for update**. To update, **delete** the existing and **upload** the replacement.
