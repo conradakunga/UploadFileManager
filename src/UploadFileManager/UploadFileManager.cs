@@ -8,17 +8,21 @@ public sealed class UploadFileManager : IUploadFileManager
     private readonly IFileCompressor _fileCompressor;
     private readonly IFileEncryptor _fileEncryptor;
     private readonly IFilePersistor _filePersistor;
+    private readonly TimeProvider _timeProvider;
 
-    public UploadFileManager(IFilePersistor filePersistor, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor)
+    public UploadFileManager(IFilePersistor filePersistor, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor,
+        TimeProvider timeProvider)
     {
         // Check that the injected services are valid
         ArgumentNullException.ThrowIfNull(filePersistor);
         ArgumentNullException.ThrowIfNull(fileEncryptor);
         ArgumentNullException.ThrowIfNull(fileCompressor);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         _filePersistor = filePersistor;
         _fileEncryptor = fileEncryptor;
         _fileCompressor = fileCompressor;
+        _timeProvider = timeProvider;
     }
 
     /// <summary>
@@ -74,7 +78,7 @@ public sealed class UploadFileManager : IUploadFileManager
             FileId = fileID,
             Name = fileName,
             Extension = extension,
-            DateUploaded = DateTime.Now,
+            DateUploaded = _timeProvider.GetLocalNow().DateTime,
             OriginalSize = data.Length,
             PersistedSize = encrypted.Length,
             CompressionAlgorithm = _fileCompressor.CompressionAlgorithm,

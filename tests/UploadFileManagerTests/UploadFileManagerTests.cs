@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Rad.UploadFileManager;
 
@@ -18,7 +19,9 @@ public class UploadFileManagerTests
         var compressor = new Mock<IFileCompressor>();
         var encryptor = new Mock<IFileEncryptor>();
         var persistor = new Mock<IFilePersistor>();
-        var sut = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object);
+        var fakeTimeProvider = new FakeTimeProvider();
+        fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var sut = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
         var data = new MemoryStream([0, 3, 3, 4, 4]);
         var ex = await Record.ExceptionAsync(() => sut.UploadFileAsync(fileName, ".png", data));
         ex.Should().BeOfType<ArgumentException>();
