@@ -66,6 +66,7 @@ public sealed class UploadFileManager : IUploadFileManager
 
         // Build the metadata
         var fileID = Guid.CreateVersion7();
+        var currentTime = _timeProvider.GetLocalNow().DateTime;
         byte[] hash;
 
         // Get a SHA256 hash of the original contents
@@ -78,7 +79,7 @@ public sealed class UploadFileManager : IUploadFileManager
             FileId = fileID,
             Name = fileName,
             Extension = extension,
-            DateUploaded = _timeProvider.GetLocalNow().DateTime,
+            DateUploaded = currentTime,
             OriginalSize = data.Length,
             PersistedSize = encrypted.Length,
             CompressionAlgorithm = _fileCompressor.CompressionAlgorithm,
