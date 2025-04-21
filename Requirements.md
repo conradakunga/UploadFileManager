@@ -65,9 +65,7 @@ Given we are going to support encryption and compression, it will probably be a 
 
 ### Hashing
 
-We will use SHA
-
-In our [next post]({% post_url 2025-04-19-designing-building-packaging-a-scalable-testable-net-open-source-component-part-3-project-setup %}) we shall setup our project and start the preliminary work.
+We will use SHA256
 
 ### Encryption
 
