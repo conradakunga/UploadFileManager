@@ -28,12 +28,12 @@ public sealed record FileMetadata
     /// <summary>
     /// Original file size
     /// </summary>
-    public required int OriginalSize { get; init; }
+    public required long OriginalSize { get; init; }
 
     /// <summary>
     /// Compressed file size
     /// </summary>
-    public required int CompressedSize { get; init; }
+    public required long PersistedSize { get; init; }
 
     /// <summary>
     /// Compression algorithm used to compress file
