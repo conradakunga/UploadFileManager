@@ -1,4 +1,4 @@
-namespace UploadFileManager;
+namespace Rad.UploadFileManager;
 
 public interface IFilePersistor
 {

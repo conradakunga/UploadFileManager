@@ -1,4 +1,4 @@
-namespace UploadFileManager;
+namespace Rad.UploadFileManager;
 /// <summary>
 /// Algorithm to use for encryption
 /// </summary>

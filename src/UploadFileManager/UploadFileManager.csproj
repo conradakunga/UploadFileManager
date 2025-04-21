@@ -1,4 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Rad.UploadFileManager</AssemblyName>
+    <RootNamespace>Rad.UploadFileManager</RootNamespace>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp">
       <PrivateAssets>all</PrivateAssets>

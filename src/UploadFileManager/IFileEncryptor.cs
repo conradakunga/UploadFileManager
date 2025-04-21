@@ -1,4 +1,4 @@
-namespace UploadFileManager;
+namespace Rad.UploadFileManager;
 
 /// <summary>
 /// File encryption & decryption contract

@@ -1,4 +1,4 @@
-namespace UploadFileManager;
+namespace Rad.UploadFileManager;
 
 /// <summary>
 /// Metadata of store files

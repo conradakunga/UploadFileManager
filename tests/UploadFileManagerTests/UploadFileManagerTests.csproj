@@ -27,4 +27,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UploadFileManager\UploadFileManager.csproj" />
+  </ItemGroup>
+
 </Project>

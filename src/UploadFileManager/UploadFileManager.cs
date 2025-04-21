@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
-namespace UploadFileManager;
+namespace Rad.UploadFileManager;
 
 public sealed class UploadFileManager : IUploadFileManager
 {
