@@ -38,22 +38,13 @@ public sealed class UploadFileManager : IUploadFileManager
         CancellationToken cancellationToken = default)
     {
         //Verify the passed in parameters are not null
-        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(extension);
         ArgumentNullException.ThrowIfNull(data);
 
         // Verify the fileName has valid characters
-        var invalidCharacters = Path.GetInvalidFileNameChars();
-        if (invalidCharacters.Any(fileName.Contains))
-            throw new ArgumentException($"The file name '{fileName}' contains invalid characters");
+        FileNameValidator.Validate(fileName);
 
         // Verify the extension has valid characters
-        if (invalidCharacters.Any(extension.Contains))
-            throw new ArgumentException($"The extension '{extension}' contains invalid characters");
-
-        // Validate the regex for the extension
-        if (!Regex.IsMatch(extension, @"^\.\w+$"))
-            throw new ArgumentException($"The extension {extension}' does not conform to the expected format: .xxx");
+        ExtensionValidator.Validate(extension);
 
         //
         // Now carry out the work
@@ -80,8 +71,8 @@ public sealed class UploadFileManager : IUploadFileManager
             Name = fileName,
             Extension = extension,
             DateUploaded = currentTime,
-            OriginalSize = data.Length,
-            PersistedSize = encrypted.Length,
+            OriginalSize = data?.Length ?? 0,
+            PersistedSize = encrypted?.Length ?? 0,
             CompressionAlgorithm = _fileCompressor.CompressionAlgorithm,
             EncryptionAlgorithm = _fileEncryptor.EncryptionAlgorithm,
             Hash = hash

@@ -5,7 +5,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
-public class UploadFileManagerTests
+public partial class UploadFileManagerTests
 {
     [Fact]
     public void UploadFile_Throws_Exception_With_Null_Compressor()
@@ -83,7 +83,8 @@ public class UploadFileManagerTests
             .Returns(EncryptionAlgorithm.Aes);
 
         persistor.Setup(x =>
-                x.StoreFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>(), CancellationToken.None))
+                x.StoreFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>(),
+                    CancellationToken.None))
             .ReturnsAsync(metaData);
 
         compressor.Setup(x => x.Compress(It.IsAny<Stream>()))
@@ -108,25 +109,5 @@ public class UploadFileManagerTests
             x => x.StoreFileAsync(fileName, extension, It.IsAny<Stream>(),
                 CancellationToken.None),
             Times.Once);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("  ")]
-    [InlineData("/")]
-    [InlineData(@"\Name")]
-    [InlineData("/Name")]
-    public async Task UploadFile_Throws_Exceptions_For_Invalid_FileName(string? fileName)
-    {
-        var compressor = new Mock<IFileCompressor>(MockBehavior.Strict);
-        var encryptor = new Mock<IFileEncryptor>(MockBehavior.Strict);
-        var persistor = new Mock<IFilePersistor>(MockBehavior.Strict);
-        var fakeTimeProvider = new FakeTimeProvider();
-        fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        var sut = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
-        var data = new MemoryStream([0, 3, 3, 4, 4]);
-        var ex = await Record.ExceptionAsync(() => sut.UploadFileAsync(fileName!, ".png", data));
-        ex.Should().BeOfType<ArgumentException>();
     }
 }
