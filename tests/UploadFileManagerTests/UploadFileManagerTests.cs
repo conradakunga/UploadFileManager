@@ -5,7 +5,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
-public partial class UploadFileManagerTests
+public class UploadFileManagerTests
 {
     [Fact]
     public void UploadFile_Throws_Exception_With_Null_Compressor()
@@ -75,24 +75,26 @@ public partial class UploadFileManagerTests
         var persistor = new Mock<IFilePersistor>(MockBehavior.Strict);
         var compressor = new Mock<IFileCompressor>(MockBehavior.Strict);
 
-        // Configure the behaviour for methods called and properties
+        // Create a sequence to track invocation order
+        var sequence = new MockSequence();
 
-        encryptor.Setup(x => x.Encrypt(It.IsAny<Stream>()))
-            .Returns(new MemoryStream(encryptedBytes));
-        encryptor.Setup(x => x.EncryptionAlgorithm)
-            .Returns(EncryptionAlgorithm.Aes);
-
-        persistor.Setup(x =>
-                x.StoreFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>(),
-                    CancellationToken.None))
-            .ReturnsAsync(metaData);
-
-        compressor.Setup(x => x.Compress(It.IsAny<Stream>()))
+        // Configure the behaviour for methods called and properties, specifying the sequence
+        compressor.InSequence(sequence).Setup(x => x.Compress(It.IsAny<Stream>()))
             .Returns(new MemoryStream(compressedBytes));
         compressor.Setup(x => x.CompressionAlgorithm)
             .Returns(CompressionAlgorithm.Zip);
 
-        // Setup the time provider
+        encryptor.InSequence(sequence).Setup(x => x.Encrypt(It.IsAny<Stream>()))
+            .Returns(new MemoryStream(encryptedBytes));
+        encryptor.Setup(x => x.EncryptionAlgorithm)
+            .Returns(EncryptionAlgorithm.Aes);
+
+        persistor.InSequence(sequence).Setup(x =>
+                x.StoreFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>(),
+                    CancellationToken.None))
+            .ReturnsAsync(metaData);
+
+        // Set up the time provider
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var manager = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);

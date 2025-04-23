@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 
 namespace Rad.UploadFileManager;
 
@@ -71,8 +70,8 @@ public sealed class UploadFileManager : IUploadFileManager
             Name = fileName,
             Extension = extension,
             DateUploaded = currentTime,
-            OriginalSize = data?.Length ?? 0,
-            PersistedSize = encrypted?.Length ?? 0,
+            OriginalSize = data.Length,
+            PersistedSize = encrypted.Length,
             CompressionAlgorithm = _fileCompressor.CompressionAlgorithm,
             EncryptionAlgorithm = _fileEncryptor.EncryptionAlgorithm,
             Hash = hash
