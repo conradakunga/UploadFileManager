@@ -8,10 +8,12 @@
   <ItemGroup>
     <PackageVersion Include="AwesomeAssertions" Version="8.1.0" />
     <PackageVersion Include="AwesomeAssertions.Analyzers" Version="0.34.2" />
+    <PackageVersion Include="Bogus" Version="35.6.3" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
+    <PackageVersion Include="DotNetZip.Original" Version="2025.2.15" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.4.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />

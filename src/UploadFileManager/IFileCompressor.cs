@@ -22,5 +22,5 @@ public interface IFileCompressor
     /// </summary>
     /// <param name="data"></param>
     /// <returns></returns>
-    public Stream DeCompress(Stream data);
+    public Stream Decompress(Stream data);
 }

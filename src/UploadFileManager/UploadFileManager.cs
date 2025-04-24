@@ -114,7 +114,7 @@ public sealed class UploadFileManager : IUploadFileManager
             // Decrypt the data
             var decryptedData = _fileEncryptor.Decrypt(persistedData);
             // Decompress the decrypted ata
-            var uncompressedData = _fileCompressor.DeCompress(decryptedData);
+            var uncompressedData = _fileCompressor.Decompress(decryptedData);
             return uncompressedData;
         }
 

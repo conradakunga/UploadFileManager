@@ -73,7 +73,7 @@ We will use AES
 
 ### Compression
 
-We will use Zip compression
+We will use GZip compression, as we are operating at file level
 
 ### File IDs
 
