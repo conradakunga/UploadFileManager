@@ -22,7 +22,7 @@ public class GZipCompressorTests
 
         var faker = new Faker();
         var originalData = faker.Lorem.Sentences(10);
-        var streamToCompress = new MemoryStream(Encoding.Default.GetBytes(originalData));
+        var streamToCompress = new MemoryStream(Encoding.UTF8.GetBytes(originalData));
         var originalStreamSize = streamToCompress.Length;
 
         // Act
@@ -31,7 +31,7 @@ public class GZipCompressorTests
         var compressedStreamSize = compressedStream.Length;
         var decompressedStream = _gzipCompressor.Decompress(compressedStream);
 
-        var decompressedData = Encoding.Default.GetString(decompressedStream.GetBytes());
+        var decompressedData = Encoding.UTF8.GetString(decompressedStream.GetBytes());
 
         // Assert
 
@@ -48,7 +48,7 @@ public class GZipCompressorTests
     {
         var faker = new Faker();
         var originalData = faker.Lorem.Sentences(10);
-        var originalDataBytes = Encoding.Default.GetBytes(originalData);
+        var originalDataBytes = Encoding.UTF8.GetBytes(originalData);
         var streamToCompress = new MemoryStream(originalDataBytes);
 
         // Create a memory stream to hold the compressed data
