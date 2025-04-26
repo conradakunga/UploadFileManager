@@ -27,7 +27,8 @@ We can then improve this component by performing some operations before persiste
 
 With regard to storage, this component should support the following:
 
-1. **File system** - the files will be stored on a folder in the server
+1. ** In Memory** - the files will be stored in memory
+2. **File system** - the files will be stored on a folder in the server
 2. **Database** - the files will be stored as [BLOBs](https://en.wikipedia.org/wiki/Binary_blob) on the database. Preliminary support will be for [SQL Server](https://www.microsoft.com/en-us/sql-server) first, and then [PostgreSQL](https://www.postgresql.org/)
 3. **Cloud BLOB storage** - the files will be stored as BLOB objects in the cloud. Preliminary support will be for [Azure](https://azure.microsoft.com/en-us/) and [Amazon](https://aws.amazon.com/).
 
