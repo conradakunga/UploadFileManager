@@ -23,7 +23,7 @@ public class AesFileEncryptorTests
     }
 
     [Fact]
-    public void Encryption_And_Decryption_Is_Sucessful()
+    public void Encryption_And_Decryption_Is_Successful()
     {
         var faker = new Faker();
         var originalData = faker.Lorem.Sentences(10);

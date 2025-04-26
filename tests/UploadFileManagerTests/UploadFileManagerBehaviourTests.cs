@@ -5,18 +5,18 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
-public class UploadFileManagerTests
+public class UploadFileManagerBehaviourTests
 {
     [Fact]
     public void UploadFile_Throws_Exception_With_Null_Compressor()
     {
         var encryptor = new Mock<IFileEncryptor>(MockBehavior.Strict);
-        var persistor = new Mock<IFilePersistor>(MockBehavior.Strict);
+        var persistor = new Mock<IStorageEngine>(MockBehavior.Strict);
         IFileCompressor compressor = null;
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManager(persistor.Object, encryptor.Object, compressor, fakeTimeProvider));
+            new UploadFileManagerBehaviour(persistor.Object, encryptor.Object, compressor, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -25,11 +25,11 @@ public class UploadFileManagerTests
     {
         var encryptor = new Mock<IFileEncryptor>(MockBehavior.Strict);
         var compressor = new Mock<IFileCompressor>(MockBehavior.Strict);
-        IFilePersistor persistor = null;
+        IStorageEngine persistor = null;
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManager(persistor, encryptor.Object, compressor.Object, fakeTimeProvider));
+            new UploadFileManagerBehaviour(persistor, encryptor.Object, compressor.Object, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -37,12 +37,12 @@ public class UploadFileManagerTests
     public void UploadFile_Throws_Exception_With_Null_Encryptor()
     {
         var compressor = new Mock<IFileCompressor>(MockBehavior.Strict);
-        var persistor = new Mock<IFilePersistor>(MockBehavior.Strict);
+        var persistor = new Mock<IStorageEngine>(MockBehavior.Strict);
         IFileEncryptor encryptor = null;
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManager(persistor.Object, encryptor, compressor.Object, fakeTimeProvider));
+            new UploadFileManagerBehaviour(persistor.Object, encryptor, compressor.Object, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -72,7 +72,7 @@ public class UploadFileManagerTests
 
         // Setup our mocks
         var encryptor = new Mock<IFileEncryptor>(MockBehavior.Strict);
-        var persistor = new Mock<IFilePersistor>(MockBehavior.Strict);
+        var persistor = new Mock<IStorageEngine>(MockBehavior.Strict);
         var compressor = new Mock<IFileCompressor>(MockBehavior.Strict);
 
         // Create a sequence to track invocation order
@@ -90,14 +90,14 @@ public class UploadFileManagerTests
             .Returns(EncryptionAlgorithm.Aes);
 
         persistor.InSequence(sequence).Setup(x =>
-                x.StoreFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>(),
+                x.StoreFileAsync(It.IsAny<FileMetadata>(), It.IsAny<Stream>(),
                     CancellationToken.None))
             .ReturnsAsync(metaData);
 
         // Set up the time provider
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        var manager = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
+        var manager = new UploadFileManagerBehaviour(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
 
         // Invoke the method, discarding the return as validating it is not useful
         _ = await manager.UploadFileAsync(fileName, extension, new MemoryStream(originalBytes), CancellationToken.None);
@@ -108,7 +108,7 @@ public class UploadFileManagerTests
         encryptor.Verify(x => x.Encrypt(It.IsAny<Stream>()), Times.Once);
         // Check that the persistor's StoreFileAsync method was called once
         persistor.Verify(
-            x => x.StoreFileAsync(fileName, extension, It.IsAny<Stream>(),
+            x => x.StoreFileAsync(It.IsAny<FileMetadata>(), It.IsAny<Stream>(),
                 CancellationToken.None),
             Times.Once);
     }

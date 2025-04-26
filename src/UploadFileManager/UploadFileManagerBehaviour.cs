@@ -2,23 +2,23 @@ using System.Security.Cryptography;
 
 namespace Rad.UploadFileManager;
 
-public sealed class UploadFileManager : IUploadFileManager
+public sealed class UploadFileManagerBehaviour : IUploadFileManager
 {
     private readonly IFileCompressor _fileCompressor;
     private readonly IFileEncryptor _fileEncryptor;
-    private readonly IFilePersistor _filePersistor;
+    private readonly IStorageEngine _storageEngine;
     private readonly TimeProvider _timeProvider;
 
-    public UploadFileManager(IFilePersistor filePersistor, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor,
+    public UploadFileManagerBehaviour(IStorageEngine storageEngine, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor,
         TimeProvider timeProvider)
     {
         // Check that the injected services are valid
-        ArgumentNullException.ThrowIfNull(filePersistor);
+        ArgumentNullException.ThrowIfNull(storageEngine);
         ArgumentNullException.ThrowIfNull(fileEncryptor);
         ArgumentNullException.ThrowIfNull(fileCompressor);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        _filePersistor = filePersistor;
+        _storageEngine = storageEngine;
         _fileEncryptor = fileEncryptor;
         _fileCompressor = fileCompressor;
         _timeProvider = timeProvider;
@@ -51,6 +51,7 @@ public sealed class UploadFileManager : IUploadFileManager
 
         // Compress the data
         var compressed = _fileCompressor.Compress(data);
+
         // Encrypt the data
         var encrypted = _fileEncryptor.Encrypt(compressed);
 
@@ -78,7 +79,10 @@ public sealed class UploadFileManager : IUploadFileManager
         };
 
         // Persist the file data
-        await _filePersistor.StoreFileAsync(fileName, extension, encrypted, cancellationToken);
+        await _storageEngine.StoreFileAsync(metadata, encrypted, cancellationToken);
+
+        // Reset the position of the data stream
+        data.Position = 0;
         return metadata;
     }
 
@@ -91,8 +95,8 @@ public sealed class UploadFileManager : IUploadFileManager
     public async Task<FileMetadata> FetchMetadataAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
         // Verify that the file exists first
-        if (await _filePersistor.FileExistsAsync(fileId, cancellationToken))
-            return await _filePersistor.GetMetadataAsync(fileId, cancellationToken);
+        if (await _storageEngine.FileExistsAsync(fileId, cancellationToken))
+            return await _storageEngine.GetMetadataAsync(fileId, cancellationToken);
 
         throw new FileNotFoundException($"The file '{fileId}' was not found");
     }
@@ -107,10 +111,10 @@ public sealed class UploadFileManager : IUploadFileManager
     public async Task<Stream> DownloadFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
         // Verify that the file exists first
-        if (await _filePersistor.FileExistsAsync(fileId, cancellationToken))
+        if (await _storageEngine.FileExistsAsync(fileId, cancellationToken))
         {
             // Get the persisted file contents
-            var persistedData = await _filePersistor.GetFileAsync(fileId, cancellationToken);
+            var persistedData = await _storageEngine.GetFileAsync(fileId, cancellationToken);
             // Decrypt the data
             var decryptedData = _fileEncryptor.Decrypt(persistedData);
             // Decompress the decrypted ata
@@ -129,10 +133,10 @@ public sealed class UploadFileManager : IUploadFileManager
     public async Task DeleteFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
         // Verify that the file exists first
-        if (await _filePersistor.FileExistsAsync(fileId, cancellationToken))
-            await _filePersistor.DeleteFileAsync(fileId, cancellationToken);
-
-        throw new FileNotFoundException($"The file '{fileId}' was not found");
+        if (await _storageEngine.FileExistsAsync(fileId, cancellationToken))
+            await _storageEngine.DeleteFileAsync(fileId, cancellationToken);
+        else
+            throw new FileNotFoundException($"The file '{fileId}' was not found");
     }
 
 
@@ -144,6 +148,6 @@ public sealed class UploadFileManager : IUploadFileManager
     /// <returns></returns>
     public async Task<bool> FileExistsAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        return await _filePersistor.FileExistsAsync(fileId, cancellationToken);
+        return await _storageEngine.FileExistsAsync(fileId, cancellationToken);
     }
 }

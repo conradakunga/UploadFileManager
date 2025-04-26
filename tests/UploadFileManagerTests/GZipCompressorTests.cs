@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using System.Text;
 using Bogus;
 using FluentAssertions;
@@ -49,34 +48,40 @@ public class GZipCompressorTests
         var faker = new Faker();
         var originalData = faker.Lorem.Sentences(10);
         var originalDataBytes = Encoding.UTF8.GetBytes(originalData);
-        var streamToCompress = new MemoryStream(originalDataBytes);
-
-        // Create a memory stream to hold the compressed data
-        var compressedStream = new MemoryStream();
-
-        // Use DotNetZip's GZipStream to compress
-        using (var gzipStream = new Ionic.Zlib.GZipStream(compressedStream, Ionic.Zlib.CompressionMode.Compress,
-                   leaveOpen: true))
+        using (var streamToCompress = new MemoryStream(originalDataBytes))
         {
-            streamToCompress.CopyTo(gzipStream);
+            // Create a memory stream to hold the compressed data
+            using (var compressedStream = new MemoryStream())
+            {
+                // Use DotNetZip's GZipStream to compress
+                using (var gzipStream = new Ionic.Zlib.GZipStream(compressedStream, Ionic.Zlib.CompressionMode.Compress,
+                           leaveOpen: true))
+                {
+                    streamToCompress.CopyTo(gzipStream);
+                }
+
+                compressedStream.Position = 0;
+
+                // Decompress using GZipStream
+                using (var decompressedStream = new MemoryStream())
+                {
+                    using (var gzipStream =
+                           new Ionic.Zlib.GZipStream(compressedStream, Ionic.Zlib.CompressionMode.Decompress))
+                    {
+                        gzipStream.CopyTo(decompressedStream);
+                    }
+
+                    // Reset the position of the decompressed stream to the beginning
+                    decompressedStream.Position = 0;
+
+                    var originalFromDotNetZip = decompressedStream.ToArray();
+
+                    // Now compress and decompress using our component
+                    var originalFromComponent =
+                        _gzipCompressor.Decompress(_gzipCompressor.Compress(streamToCompress)).GetBytes();
+                    originalFromDotNetZip.Should().BeEquivalentTo(originalFromComponent);
+                }
+            }
         }
-
-        compressedStream.Position = 0;
-
-        // Decompress using GZipStream
-        var decompressedStream = new MemoryStream();
-        using (var gzipStream = new Ionic.Zlib.GZipStream(compressedStream, Ionic.Zlib.CompressionMode.Decompress))
-        {
-            gzipStream.CopyTo(decompressedStream);
-        }
-
-        // Reset the position of the decompressed stream to the beginning
-        decompressedStream.Position = 0;
-
-        var originalFromDotNetZip = decompressedStream.ToArray();
-
-        // Now compress and decompress using our component
-        var originalFromComponent = _gzipCompressor.Decompress(_gzipCompressor.Compress(streamToCompress)).GetBytes();
-        originalFromDotNetZip.Should().BeEquivalentTo(originalFromComponent);
     }
 }
