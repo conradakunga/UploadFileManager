@@ -17,17 +17,18 @@ public class InMemoryStorageEngine : IStorageEngine
     }
 
     /// <inheritdoc />
-    public Task<FileMetadata> StoreFileAsync(FileMetadata metaData, Stream data,
+    public async Task<FileMetadata> StoreFileAsync(FileMetadata metaData, Stream data,
         CancellationToken cancellationToken = default)
     {
         // Copy to a memory stream for storage
         var memoryStream = new MemoryStream();
-        data.CopyTo(memoryStream);
+        await data.CopyToAsync(memoryStream, cancellationToken);
+        // Reset the stream position
         memoryStream.Position = 0;
-        
+
         // Store the stream
         _files[metaData.FileId] = (metaData, memoryStream);
-        return Task.FromResult(metaData);
+        return metaData;
     }
 
     /// <inheritdoc />
