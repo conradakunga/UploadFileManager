@@ -1,12 +1,3 @@
--- DATABASE
-IF NOT EXISTS (SELECT name
-               FROM sys.databases
-               WHERE name = 'FileStore')
-    BEGIN
-        CREATE DATABASE FileStore;
-    END
-GO
-
 Use FileStore;
 
 GO

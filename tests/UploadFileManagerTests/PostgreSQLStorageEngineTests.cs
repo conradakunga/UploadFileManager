@@ -3,30 +3,31 @@ using System.Text;
 using Bogus;
 using Dapper;
 using FluentAssertions;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Time.Testing;
+using Npgsql;
 using Rad.UploadFileManager;
-using Testcontainers.MsSql;
-using Xunit.Abstractions;
+using Testcontainers.PostgreSql;
 
 namespace UploadFileManagerTests;
 
-public class SqlServerStorageEngineTests : IAsyncLifetime
+public class PostgreSQLStorageEngineTests : IAsyncLifetime
 {
     private UploadFileManager _manager;
 
     // Instance of the database
-    private readonly MsSqlContainer _db = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
+        .WithImage("postgres:17-alpine")
+        .WithDatabase(Constants.FileStoreDatabaseName)
         .Build();
 
     private async Task InitializeDatabaseAsync()
     {
-        var queryText = await File.ReadAllTextAsync("SqlServerSetup.sql");
-        // Split the queries - they are demarcated by 'GO'
-        var queries = queryText.Split("GO", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var queryText = await File.ReadAllTextAsync("PostgreSQLSetup.sql");
+        // Split the queries - they are demarcated by two newlines
+        var queries = queryText.Split($"{Environment.NewLine}{Environment.NewLine}",
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         // Execute each query
-        await using (var cn = new SqlConnection(_db.GetConnectionString()))
+        await using (var cn = new NpgsqlConnection(_db.GetConnectionString()))
         {
             foreach (var query in queries)
             {
@@ -39,19 +40,6 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
     {
         // Start the database
         await _db.StartAsync();
-
-        // After starting, create the database manually
-        await using var connection = new SqlConnection(_db.GetConnectionString());
-        await connection.OpenAsync();
-
-        const string sql = $"""
-                            IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{Constants.FileStoreDatabaseName}')
-                            BEGIN
-                                CREATE DATABASE [{Constants.FileStoreDatabaseName}];
-                            END
-                            """;
-
-        await connection.ExecuteAsync(sql);
 
         // Initialize the database
         await InitializeDatabaseAsync();
@@ -70,7 +58,7 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
 
         // Create the storage engine
         var storageEngine =
-            new SqlServerStorageEngine(_db.GetConnectionString());
+            new PosgrgreSQLStorageEngine(_db.GetConnectionString());
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
