@@ -1,20 +1,50 @@
 using System.Security.Cryptography;
 using System.Text;
 using Bogus;
+using Dapper;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Time.Testing;
 using Rad.UploadFileManager;
+using Testcontainers.MsSql;
 
 namespace UploadFileManagerTests;
 
-public class SqlServerStorageEngineTests
+public class SqlServerStorageEngineTests : IAsyncLifetime
 {
-    private readonly UploadFileManagerBehaviour _managerBehaviour;
+    private UploadFileManager _manager;
 
-    public SqlServerStorageEngineTests()
+    // Instance of the database
+    private readonly MsSqlContainer _db = new MsSqlBuilder()
+        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        .Build();
+
+    private async Task InitializeDatabaseAsync()
     {
+        var queryText = await File.ReadAllTextAsync("SqlServerTable.sql");
+        // Split the queries
+        var queries = queryText.Split("GO", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // Execute each query
+        await using (var cn = new SqlConnection(_db.GetConnectionString()))
+        {
+            foreach (var query in queries)
+            {
+                await cn.ExecuteAsync(query);
+            }
+        }
+    }
+
+    public async Task InitializeAsync()
+    {
+        // Start the database
+        await _db.StartAsync();
+
+        // Initialize the database
+        await InitializeDatabaseAsync();
+
         // Create a file compressor
         var compressor = new GZipCompressor();
+
         //
         // Create an encryptor
         //
@@ -26,14 +56,19 @@ public class SqlServerStorageEngineTests
 
         // Create the storage engine
         var storageEngine =
-            new SqlServerStorageEngine("data source=localhost;uid=sa;pwd=YourStrongPassword123;Database=FileStore;TrustServerCertificate=True;");
+            new SqlServerStorageEngine(_db.GetConnectionString());
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
         timeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Create the file manager
-        _managerBehaviour = new UploadFileManagerBehaviour(storageEngine, encryptor, compressor, timeProvider);
+        _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
+    }
+
+    public Task DisposeAsync()
+    {
+        return _db.DisposeAsync().AsTask();
     }
 
     private static MemoryStream GetFile()
@@ -46,7 +81,7 @@ public class SqlServerStorageEngineTests
 
     private async Task<FileMetadata> Upload(MemoryStream data)
     {
-        return await _managerBehaviour.UploadFileAsync("Test.txt", ".txt", data, CancellationToken.None);
+        return await _manager.UploadFileAsync("Test.txt", ".txt", data, CancellationToken.None);
     }
 
     [Fact]
@@ -60,7 +95,7 @@ public class SqlServerStorageEngineTests
         uploadMetadata.Should().NotBeNull();
         uploadMetadata.FileId.Should().NotBeEmpty();
         // Download the file
-        var download = await _managerBehaviour.DownloadFileAsync(uploadMetadata.FileId);
+        var download = await _manager.DownloadFileAsync(uploadMetadata.FileId);
         download.GetBytes().Should().BeEquivalentTo(data.GetBytes());
     }
 
@@ -68,7 +103,7 @@ public class SqlServerStorageEngineTests
     public async Task File_Exists_Fails_If_ID_Doesnt_Exist()
     {
         // Check if the file exists
-        var result = await _managerBehaviour.FileExistsAsync(Guid.Empty);
+        var result = await _manager.FileExistsAsync(Guid.Empty);
         result.Should().BeFalse();
     }
 
@@ -80,7 +115,7 @@ public class SqlServerStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Check if the file exists by ID
-        var result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        var result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeTrue();
     }
 
@@ -92,12 +127,12 @@ public class SqlServerStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Check if the file exists
-        var result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        var result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeTrue();
         // Delete the file
-        await _managerBehaviour.DeleteFileAsync(uploadMetadata.FileId);
+        await _manager.DeleteFileAsync(uploadMetadata.FileId);
         // Check again if the file exists
-        result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeFalse();
     }
 
@@ -109,7 +144,7 @@ public class SqlServerStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Get the metadata from the ID
-        var storedMetadata = await _managerBehaviour.FetchMetadataAsync(uploadMetadata.FileId);
+        var storedMetadata = await _manager.FetchMetadataAsync(uploadMetadata.FileId);
         storedMetadata.Should().NotBeNull();
         storedMetadata.Should().BeEquivalentTo(uploadMetadata);
     }
@@ -118,7 +153,7 @@ public class SqlServerStorageEngineTests
     public async Task File_GetMetadata_Fails_If_ID_Doesnt_Exist()
     {
         // Fetch metadata for non-existent ID
-        var ex = await Record.ExceptionAsync(() => _managerBehaviour.FetchMetadataAsync(Guid.Empty));
+        var ex = await Record.ExceptionAsync(() => _manager.FetchMetadataAsync(Guid.Empty));
         ex.Should().BeOfType<FileNotFoundException>();
     }
 
@@ -126,7 +161,7 @@ public class SqlServerStorageEngineTests
     public async Task File_Delete_Fails_If_ID_Doesnt_Exist()
     {
         // Delete a non-existent file id
-        var ex = await Record.ExceptionAsync(() => _managerBehaviour.DeleteFileAsync(Guid.Empty));
+        var ex = await Record.ExceptionAsync(() => _manager.DeleteFileAsync(Guid.Empty));
         ex.Should().BeOfType<FileNotFoundException>();
     }
 }

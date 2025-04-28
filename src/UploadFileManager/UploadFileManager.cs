@@ -2,14 +2,14 @@ using System.Security.Cryptography;
 
 namespace Rad.UploadFileManager;
 
-public sealed class UploadFileManagerBehaviour : IUploadFileManager
+public sealed class UploadFileManager : IUploadFileManager
 {
     private readonly IFileCompressor _fileCompressor;
     private readonly IFileEncryptor _fileEncryptor;
     private readonly IStorageEngine _storageEngine;
     private readonly TimeProvider _timeProvider;
 
-    public UploadFileManagerBehaviour(IStorageEngine storageEngine, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor,
+    public UploadFileManager(IStorageEngine storageEngine, IFileEncryptor fileEncryptor, IFileCompressor fileCompressor,
         TimeProvider timeProvider)
     {
         // Check that the injected services are valid

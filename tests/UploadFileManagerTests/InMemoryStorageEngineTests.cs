@@ -9,7 +9,7 @@ namespace UploadFileManagerTests;
 
 public class InMemoryStorageEngineTests
 {
-    private readonly UploadFileManagerBehaviour _managerBehaviour;
+    private readonly UploadFileManager _manager;
 
     public InMemoryStorageEngineTests()
     {
@@ -32,7 +32,7 @@ public class InMemoryStorageEngineTests
         timeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Create the file manager
-        _managerBehaviour = new UploadFileManagerBehaviour(storageEngine, encryptor, compressor, timeProvider);
+        _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
     }
 
     private static MemoryStream GetFile()
@@ -45,7 +45,7 @@ public class InMemoryStorageEngineTests
 
     private async Task<FileMetadata> Upload(MemoryStream data)
     {
-        return await _managerBehaviour.UploadFileAsync("Test.txt", ".txt", data, CancellationToken.None);
+        return await _manager.UploadFileAsync("Test.txt", ".txt", data, CancellationToken.None);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class InMemoryStorageEngineTests
         uploadMetadata.Should().NotBeNull();
         uploadMetadata.FileId.Should().NotBeEmpty();
         // Download the file
-        var download = await _managerBehaviour.DownloadFileAsync(uploadMetadata.FileId);
+        var download = await _manager.DownloadFileAsync(uploadMetadata.FileId);
         download.GetBytes().Should().BeEquivalentTo(data.GetBytes());
     }
 
@@ -67,7 +67,7 @@ public class InMemoryStorageEngineTests
     public async Task File_Exists_Fails_If_ID_Doesnt_Exist()
     {
         // Check if the file exists
-        var result = await _managerBehaviour.FileExistsAsync(Guid.Empty);
+        var result = await _manager.FileExistsAsync(Guid.Empty);
         result.Should().BeFalse();
     }
 
@@ -79,7 +79,7 @@ public class InMemoryStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Check if the file exists by ID
-        var result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        var result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeTrue();
     }
 
@@ -91,12 +91,12 @@ public class InMemoryStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Check if the file exists
-        var result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        var result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeTrue();
         // Delete the file
-        await _managerBehaviour.DeleteFileAsync(uploadMetadata.FileId);
+        await _manager.DeleteFileAsync(uploadMetadata.FileId);
         // Check again if the file exists
-        result = await _managerBehaviour.FileExistsAsync(uploadMetadata.FileId);
+        result = await _manager.FileExistsAsync(uploadMetadata.FileId);
         result.Should().BeFalse();
     }
 
@@ -108,7 +108,7 @@ public class InMemoryStorageEngineTests
         // Upload a file
         var uploadMetadata = await Upload(data);
         // Get the metadata from the ID
-        var storedMetadata = await _managerBehaviour.FetchMetadataAsync(uploadMetadata.FileId);
+        var storedMetadata = await _manager.FetchMetadataAsync(uploadMetadata.FileId);
         storedMetadata.Should().NotBeNull();
         storedMetadata.Should().Be(uploadMetadata);
     }
@@ -117,7 +117,7 @@ public class InMemoryStorageEngineTests
     public async Task File_GetMetadata_Fails_If_ID_Doesnt_Exist()
     {
         // Fetch metadata for non-existent ID
-        var ex = await Record.ExceptionAsync(() => _managerBehaviour.FetchMetadataAsync(Guid.Empty));
+        var ex = await Record.ExceptionAsync(() => _manager.FetchMetadataAsync(Guid.Empty));
         ex.Should().BeOfType<FileNotFoundException>();
     }
 
@@ -125,7 +125,7 @@ public class InMemoryStorageEngineTests
     public async Task File_Delete_Fails_If_ID_Doesnt_Exist()
     {
         // Delete a non-existent file id
-        var ex = await Record.ExceptionAsync(() => _managerBehaviour.DeleteFileAsync(Guid.Empty));
+        var ex = await Record.ExceptionAsync(() => _manager.DeleteFileAsync(Guid.Empty));
         ex.Should().BeOfType<FileNotFoundException>();
     }
 }

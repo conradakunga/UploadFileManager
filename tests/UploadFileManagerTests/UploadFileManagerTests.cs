@@ -5,7 +5,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
-public class UploadFileManagerBehaviourTests
+public class UploadFileManagerTests
 {
     [Fact]
     public void UploadFile_Throws_Exception_With_Null_Compressor()
@@ -16,7 +16,7 @@ public class UploadFileManagerBehaviourTests
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManagerBehaviour(persistor.Object, encryptor.Object, compressor, fakeTimeProvider));
+            new UploadFileManager(persistor.Object, encryptor.Object, compressor, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -29,7 +29,7 @@ public class UploadFileManagerBehaviourTests
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManagerBehaviour(persistor, encryptor.Object, compressor.Object, fakeTimeProvider));
+            new UploadFileManager(persistor, encryptor.Object, compressor.Object, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -42,7 +42,7 @@ public class UploadFileManagerBehaviourTests
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var ex = Record.Exception(() =>
-            new UploadFileManagerBehaviour(persistor.Object, encryptor, compressor.Object, fakeTimeProvider));
+            new UploadFileManager(persistor.Object, encryptor, compressor.Object, fakeTimeProvider));
         ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
     }
 
@@ -97,7 +97,7 @@ public class UploadFileManagerBehaviourTests
         // Set up the time provider
         var fakeTimeProvider = new FakeTimeProvider();
         fakeTimeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        var manager = new UploadFileManagerBehaviour(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
+        var manager = new UploadFileManager(persistor.Object, encryptor.Object, compressor.Object, fakeTimeProvider);
 
         // Invoke the method, discarding the return as validating it is not useful
         _ = await manager.UploadFileAsync(fileName, extension, new MemoryStream(originalBytes), CancellationToken.None);
