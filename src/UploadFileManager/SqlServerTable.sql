@@ -1,38 +1,58 @@
--- Database setup
-
-CREATE DATABASE FileStore;
-
+-- DATABASE
+IF NOT EXISTS (SELECT name
+               FROM sys.databases
+               WHERE name = 'FileStore')
+    BEGIN
+        CREATE DATABASE FileStore;
+    END
 GO
 
 Use FileStore;
 
+GO
+
 -- TABLE
 
-create table Files
-(
-    FileID               uniqueidentifier primary key not null,
-    Name                 nvarchar(500)                not null,
-    Extension            nvarchar(10)                 not null,
-    DateUploaded         DATETIME2                    not null,
-    OriginalSize         int                          not null,
-    PersistedSize        int                          not null,
-    CompressionAlgorithm tinyint                      not null,
-    EncryptionAlgorithm  tinyint                      not null,
-    Hash                 binary(32)               not null,
-    Data                 varbinary(MAX)
-)
+-- Create table if it doesn't exist
+IF NOT EXISTS (SELECT *
+               FROM INFORMATION_SCHEMA.TABLES
+               WHERE TABLE_NAME = 'Files'
+                 AND TABLE_SCHEMA = 'dbo')
+    BEGIN
+        CREATE TABLE dbo.Files
+        (
+            FileID               UNIQUEIDENTIFIER PRIMARY KEY NOT NULL,
+            Name                 NVARCHAR(500)                NOT NULL,
+            Extension            NVARCHAR(10)                 NOT NULL,
+            DateUploaded         DATETIME2                    NOT NULL,
+            OriginalSize         INT                          NOT NULL,
+            PersistedSize        INT                          NOT NULL,
+            CompressionAlgorithm TINYINT                      NOT NULL,
+            EncryptionAlgorithm  TINYINT                      NOT NULL,
+            Hash                 BINARY(32)                   NOT NULL,
+            Data                 VARBINARY(MAX)
+        );
+    END
+GO
 
 -- INDEXES
 
-CREATE NONCLUSTERED INDEX IX_Files_Metadata
-    ON Files (FileID)
-    INCLUDE (
-             Name,
-             Extension,
-             DateUploaded,
-             OriginalSize,
-             PersistedSize,
-             CompressionAlgorithm,
-             EncryptionAlgorithm,
-             Hash
-        );
+IF NOT EXISTS (SELECT 1
+               FROM sys.indexes
+               WHERE name = 'IX_Files_Metadata'
+                 AND object_id = OBJECT_ID('dbo.Files'))
+    BEGIN
+        CREATE NONCLUSTERED INDEX IX_Files_Metadata
+            ON dbo.Files (FileID)
+            INCLUDE (
+                     Name,
+                     Extension,
+                     DateUploaded,
+                     OriginalSize,
+                     PersistedSize,
+                     CompressionAlgorithm,
+                     EncryptionAlgorithm,
+                     Hash
+                );
+    END
+GO
