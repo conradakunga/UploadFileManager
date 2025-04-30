@@ -1,9 +1,8 @@
-using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 
 namespace Rad.UploadFileManager;
 
-public sealed partial class SqlServerConnectionStringParser
+public sealed class SqlServerConnectionStringParser
 {
     private readonly string _connectionString;
 
