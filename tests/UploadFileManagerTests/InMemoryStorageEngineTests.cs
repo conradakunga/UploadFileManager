@@ -7,6 +7,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
+[Trait("Type", "Integration")]
 public class InMemoryStorageEngineTests
 {
     private readonly UploadFileManager _manager;
@@ -112,7 +113,7 @@ public class InMemoryStorageEngineTests
         storedMetadata.Should().NotBeNull();
         storedMetadata.Should().Be(uploadMetadata);
     }
-    
+
     [Fact]
     public async Task File_GetMetadata_Fails_If_ID_Doesnt_Exist()
     {

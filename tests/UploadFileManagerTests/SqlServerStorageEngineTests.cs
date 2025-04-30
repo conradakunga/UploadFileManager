@@ -7,12 +7,13 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Time.Testing;
 using Rad.UploadFileManager;
 using Testcontainers.MsSql;
-using Xunit.Abstractions;
 
 namespace UploadFileManagerTests;
 
+[Trait("Type", "Integration")]
 public class SqlServerStorageEngineTests : IAsyncLifetime
 {
+    const string databaseName = "FileStore";
     private UploadFileManager _manager;
 
     // Instance of the database
@@ -23,15 +24,10 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
     private async Task InitializeDatabaseAsync()
     {
         var queryText = await File.ReadAllTextAsync("SqlServerSetup.sql");
-        // Split the queries - they are demarcated by 'GO'
-        var queries = queryText.Split("GO", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        // Execute each query
+        // Execute
         await using (var cn = new SqlConnection(_db.GetConnectionString()))
         {
-            foreach (var query in queries)
-            {
-                await cn.ExecuteAsync(query);
-            }
+            await cn.ExecuteAsync(queryText);
         }
     }
 
@@ -45,9 +41,9 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
         await connection.OpenAsync();
 
         const string sql = $"""
-                            IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{Constants.FileStoreDatabaseName}')
+                            IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{databaseName}')
                             BEGIN
-                                CREATE DATABASE [{Constants.FileStoreDatabaseName}];
+                                CREATE DATABASE [{databaseName}];
                             END
                             """;
 

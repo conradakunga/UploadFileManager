@@ -6,6 +6,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
+[Trait("Type", "Unit")]
 public class AesFileEncryptorTests
 {
     private readonly byte[] _key;

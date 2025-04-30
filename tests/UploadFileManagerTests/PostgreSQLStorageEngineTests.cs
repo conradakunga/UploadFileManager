@@ -10,6 +10,7 @@ using Testcontainers.PostgreSql;
 
 namespace UploadFileManagerTests;
 
+[Trait("Type", "Integration")]
 public class PostgreSQLStorageEngineTests : IAsyncLifetime
 {
     private UploadFileManager _manager;
@@ -17,22 +18,16 @@ public class PostgreSQLStorageEngineTests : IAsyncLifetime
     // Instance of the database
     private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
         .WithImage("postgres:17-alpine")
-        .WithDatabase(Constants.FileStoreDatabaseName)
+        .WithDatabase("FileStore")
         .Build();
 
     private async Task InitializeDatabaseAsync()
     {
         var queryText = await File.ReadAllTextAsync("PostgreSQLSetup.sql");
-        // Split the queries - they are demarcated by two newlines
-        var queries = queryText.Split($"{Environment.NewLine}{Environment.NewLine}",
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        // Execute each query
+        // Execute
         await using (var cn = new NpgsqlConnection(_db.GetConnectionString()))
         {
-            foreach (var query in queries)
-            {
-                await cn.ExecuteAsync(query);
-            }
+            await cn.ExecuteAsync(queryText);
         }
     }
 

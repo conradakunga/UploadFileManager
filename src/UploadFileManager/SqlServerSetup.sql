@@ -1,49 +1,49 @@
-Use FileStore;
+-- Modify the table name for use
+DECLARE @TableName NVARCHAR(128) = 'Files';
+DECLARE @SchemaName NVARCHAR(128) = 'dbo';
+DECLARE @FullTableName NVARCHAR(256) = QUOTENAME(@SchemaName) + '.' + QUOTENAME(@TableName);
+DECLARE @Sql NVARCHAR(MAX);
 
-GO
-
--- TABLE
-
--- Create table if it doesn't exist
+-- Check if table exists
 IF NOT EXISTS (SELECT *
                FROM INFORMATION_SCHEMA.TABLES
-               WHERE TABLE_NAME = 'Files'
-                 AND TABLE_SCHEMA = 'dbo')
+               WHERE TABLE_NAME = @TableName
+                 AND TABLE_SCHEMA = @SchemaName)
     BEGIN
-        CREATE TABLE dbo.Files
-        (
-            FileID               UNIQUEIDENTIFIER PRIMARY KEY NOT NULL,
-            Name                 NVARCHAR(500)                NOT NULL,
-            Extension            NVARCHAR(10)                 NOT NULL,
-            DateUploaded         DATETIME2                    NOT NULL,
-            OriginalSize         INT                          NOT NULL,
-            PersistedSize        INT                          NOT NULL,
-            CompressionAlgorithm TINYINT                      NOT NULL,
-            EncryptionAlgorithm  TINYINT                      NOT NULL,
-            Hash                 BINARY(32)                   NOT NULL,
-            Data                 VARBINARY(MAX)
-        );
-    END
-GO
+        SET @Sql = '
+    CREATE TABLE ' + @FullTableName + ' (
+        FileID               UNIQUEIDENTIFIER PRIMARY KEY NOT NULL,
+        Name                 NVARCHAR(500)                NOT NULL,
+        Extension            NVARCHAR(10)                 NOT NULL,
+        DateUploaded         DATETIME2                    NOT NULL,
+        OriginalSize         INT                          NOT NULL,
+        PersistedSize        INT                          NOT NULL,
+        CompressionAlgorithm TINYINT                      NOT NULL,
+        EncryptionAlgorithm  TINYINT                      NOT NULL,
+        Hash                 BINARY(32)                   NOT NULL,
+        Data                 VARBINARY(MAX)
+    );';
+        EXEC sp_executesql @Sql;
+    END;
 
--- INDEXES
-
+-- Check if index exists
 IF NOT EXISTS (SELECT 1
                FROM sys.indexes
-               WHERE name = 'IX_Files_Metadata'
-                 AND object_id = OBJECT_ID('dbo.Files'))
+               WHERE name = 'IX_' + @TableName + '_Metadata'
+                 AND object_id = OBJECT_ID(@FullTableName))
     BEGIN
-        CREATE NONCLUSTERED INDEX IX_Files_Metadata
-            ON dbo.Files (FileID)
-            INCLUDE (
-                     Name,
-                     Extension,
-                     DateUploaded,
-                     OriginalSize,
-                     PersistedSize,
-                     CompressionAlgorithm,
-                     EncryptionAlgorithm,
-                     Hash
-                );
-    END
-GO
+        SET @Sql = '
+    CREATE NONCLUSTERED INDEX' + ' IX_' + @TableName + '_Metadata
+    ON ' + @FullTableName + ' (FileID)
+    INCLUDE (
+             Name,
+             Extension,
+             DateUploaded,
+             OriginalSize,
+             PersistedSize,
+             CompressionAlgorithm,
+             EncryptionAlgorithm,
+             Hash
+        );';
+        EXEC sp_executesql @Sql;
+    END;

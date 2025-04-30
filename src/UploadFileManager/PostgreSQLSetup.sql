@@ -1,19 +1,26 @@
--- Table creation
-CREATE TABLE IF NOT EXISTS public.files
-(
-    fileid               UUID PRIMARY KEY NOT NULL,
-    name                 VARCHAR(500)     NOT NULL,
-    extension            VARCHAR(10)      NOT NULL,
-    dateuploaded         TIMESTAMPTZ      NOT NULL,
-    originalsize         INT              NOT NULL,
-    persistedsize        INT              NOT NULL,
-    compressionalgorithm SMALLINT         NOT NULL,
-    encryptionalgorithm  SMALLINT         NOT NULL,
-    hash                 BYTEA            NOT NULL,
-    data                 BYTEA
-);
+DO $$
+    DECLARE
+        -- Change this to your desired table name
+        table_name text := 'files';
+    BEGIN
+        EXECUTE format('
+        CREATE TABLE IF NOT EXISTS public.%I (
+            fileid               UUID PRIMARY KEY NOT NULL,
+            name                 VARCHAR(500)     NOT NULL,
+            extension            VARCHAR(10)      NOT NULL,
+            dateuploaded         TIMESTAMPTZ      NOT NULL,
+            originalsize         INT              NOT NULL,
+            persistedsize        INT              NOT NULL,
+            compressionalgorithm SMALLINT         NOT NULL,
+            encryptionalgorithm  SMALLINT         NOT NULL,
+            hash                 BYTEA            NOT NULL,
+            data                 BYTEA
+        );
+    ', table_name);
 
--- Index creation
-CREATE INDEX IF NOT EXISTS ix_files_metadata
-    ON public.files (fileid)
+        EXECUTE format('
+                   CREATE INDEX IF NOT EXISTS ix_%I_metadata
+    ON public.%I (fileid)
     INCLUDE (name, extension, dateuploaded, originalsize, persistedsize, compressionalgorithm, encryptionalgorithm, hash);
+                   ', table_name,table_name);
+    END $$;

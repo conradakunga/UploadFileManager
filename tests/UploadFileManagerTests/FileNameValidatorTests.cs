@@ -3,6 +3,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
+[Trait("Type", "Unit")]
 public class FileNameValidatorTests
 {
     [Theory]
