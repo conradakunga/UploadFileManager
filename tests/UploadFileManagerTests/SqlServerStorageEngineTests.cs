@@ -1,57 +1,20 @@
 using System.Security.Cryptography;
 using System.Text;
 using Bogus;
-using Dapper;
 using FluentAssertions;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Time.Testing;
 using Rad.UploadFileManager;
-using Testcontainers.MsSql;
 
 namespace UploadFileManagerTests;
 
 [Trait("Type", "Integration")]
-public class SqlServerStorageEngineTests : IAsyncLifetime
+[Collection("SQL Server Collection")]
+public class SqlServerStorageEngineTests
 {
-    const string databaseName = "FileStore";
-    private UploadFileManager _manager;
+    private readonly UploadFileManager _manager;
 
-    // Instance of the database
-    private readonly MsSqlContainer _db = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-        .Build();
-
-    private async Task InitializeDatabaseAsync()
+    public SqlServerStorageEngineTests(SqlServerContainerFixture fixture)
     {
-        var queryText = await File.ReadAllTextAsync("SqlServerSetup.sql");
-        // Execute
-        await using (var cn = new SqlConnection(_db.GetConnectionString()))
-        {
-            await cn.ExecuteAsync(queryText);
-        }
-    }
-
-    public async Task InitializeAsync()
-    {
-        // Start the database
-        await _db.StartAsync();
-
-        // After starting, create the database manually
-        await using var connection = new SqlConnection(_db.GetConnectionString());
-        await connection.OpenAsync();
-
-        const string sql = $"""
-                            IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{databaseName}')
-                            BEGIN
-                                CREATE DATABASE [{databaseName}];
-                            END
-                            """;
-
-        await connection.ExecuteAsync(sql);
-
-        // Initialize the database
-        await InitializeDatabaseAsync();
-
         // Create a file compressor
         var compressor = new GZipCompressor();
 
@@ -66,7 +29,7 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
 
         // Create the storage engine
         var storageEngine =
-            new SqlServerStorageEngine(_db.GetConnectionString());
+            new SqlServerStorageEngine(fixture.Container.GetConnectionString());
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
@@ -76,10 +39,6 @@ public class SqlServerStorageEngineTests : IAsyncLifetime
         _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
     }
 
-    public Task DisposeAsync()
-    {
-        return _db.DisposeAsync().AsTask();
-    }
 
     private static MemoryStream GetFile()
     {

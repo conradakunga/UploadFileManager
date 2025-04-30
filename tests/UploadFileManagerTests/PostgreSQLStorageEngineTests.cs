@@ -1,45 +1,20 @@
 using System.Security.Cryptography;
 using System.Text;
 using Bogus;
-using Dapper;
 using FluentAssertions;
 using Microsoft.Extensions.Time.Testing;
-using Npgsql;
 using Rad.UploadFileManager;
-using Testcontainers.PostgreSql;
 
 namespace UploadFileManagerTests;
 
 [Trait("Type", "Integration")]
-public class PostgreSQLStorageEngineTests : IAsyncLifetime
+[Collection("PostgreSQL Collection")]
+public class PostgreSQLStorageEngineTests
 {
-    private UploadFileManager _manager;
+    private readonly UploadFileManager _manager;
 
-    // Instance of the database
-    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
-        .WithDatabase("FileStore")
-        .Build();
-
-    private async Task InitializeDatabaseAsync()
+    public PostgreSQLStorageEngineTests(PostgreSQLContainerFixture fixture)
     {
-        var queryText = await File.ReadAllTextAsync("PostgreSQLSetup.sql");
-        // Execute
-        await using (var cn = new NpgsqlConnection(_db.GetConnectionString()))
-        {
-            await cn.ExecuteAsync(queryText);
-        }
-    }
-
-    public async Task InitializeAsync()
-    {
-        // Start the database
-        await _db.StartAsync();
-
-        // Initialize the database
-        await InitializeDatabaseAsync();
-
-        // Create a file compressor
         var compressor = new GZipCompressor();
 
         //
@@ -53,7 +28,7 @@ public class PostgreSQLStorageEngineTests : IAsyncLifetime
 
         // Create the storage engine
         var storageEngine =
-            new PosgrgreSQLStorageEngine(_db.GetConnectionString());
+            new PosgrgreSQLStorageEngine(fixture.Container.GetConnectionString());
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
@@ -61,11 +36,6 @@ public class PostgreSQLStorageEngineTests : IAsyncLifetime
 
         // Create the file manager
         _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
-    }
-
-    public Task DisposeAsync()
-    {
-        return _db.DisposeAsync().AsTask();
     }
 
     private static MemoryStream GetFile()
