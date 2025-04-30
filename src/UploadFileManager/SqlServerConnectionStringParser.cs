@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.Data.SqlClient;
 
 namespace Rad.UploadFileManager;
 
@@ -11,8 +12,12 @@ public sealed partial class SqlServerConnectionStringParser
         _connectionString = connectionString;
     }
 
-    public string Database => DatabaseRegex().Match(_connectionString).Groups["database"].Value.Trim();
-
-    [GeneratedRegex(@"(Database|Initial\s+Catalog)\s*=\s*(?<database>.*?\s*)(;|$)", RegexOptions.IgnoreCase, "en-US")]
-    private static partial Regex DatabaseRegex();
+    public string Database
+    {
+        get
+        {
+            var builder = new SqlConnectionStringBuilder(_connectionString);
+            return builder.InitialCatalog;
+        }
+    }
 }

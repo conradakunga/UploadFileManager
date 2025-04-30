@@ -7,17 +7,16 @@ namespace UploadFileManagerTests;
 public class SqlServerConnectionStringParserTests
 {
     [Theory]
-    [InlineData("Host=server;Username=login;Password=pass;Database=database", "database")]
-    [InlineData("Host=server;Username=login;Password=pass;database=my_database", "my_database")]
-    [InlineData("Host=server;Username=login;Password=pass;Database=database ", "database")]
-    [InlineData("Host=server;Username=login;Password=pass;database=my_database ", "my_database")]
-    [InlineData("Host=server;Username=login;Password=pass;Initial  Catalog=database", "database")]
-    [InlineData("Host=server;Username=login;Password=pass;Initial Catalog=my_database", "my_database")]
-    [InlineData("Database=database;Host=server;Username=login;Password=pass;", "database")]
-    [InlineData("database=my_database;Host=server;Username=login;Password=pass;", "my_database")]
-    [InlineData("Initial Catalog=database;Host=server;Username=login;Password=pass;", "database")]
-    [InlineData("Initial Catalog=my_database;Host=server;Username=login;Password=pass;", "my_database")]
-    [InlineData("Host=server;Username=login;Password=pass;", "")]
+    [InlineData("data source=server;uid=login;Password=pass;Database=database", "database")]
+    [InlineData("data source=server;uid=login;Password=pass;Database=database ", "database")]
+    [InlineData("data source=server;uid=login;Password=pass;database=my_database ", "my_database")]
+    [InlineData("data source=server;uid=login;Password=pass;Initial Catalog=database", "database")]
+    [InlineData("data source=server;uid=login;Password=pass;Initial Catalog=my_database", "my_database")]
+    [InlineData("Database=database;data source=server;uid=login;Password=pass;", "database")]
+    [InlineData("database=my_database;data source=server;uid=login;Password=pass;", "my_database")]
+    [InlineData("Initial Catalog=database;data source=server;uid=login;Password=pass;", "database")]
+    [InlineData("Initial Catalog=my_database;data source=server;uid=login;Password=pass;", "my_database")]
+    [InlineData("data source=server;uid=login;Password=pass;", "")]
     public void Database_Name_Is_Parsed(string connectionString, string databaseName)
     {
         var parser = new SqlServerConnectionStringParser(connectionString);
