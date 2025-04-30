@@ -18,6 +18,10 @@ public sealed class PosgrgreSQLStorageEngine : IStorageEngine
     public PosgrgreSQLStorageEngine(string connectionString)
     {
         _connectionString = connectionString;
+        // Parse the connection string for a database
+        var parser = new PostgreSQLConnectionStringParser(connectionString);
+        if (string.IsNullOrEmpty(parser.Database))
+            throw new ArgumentException($"{nameof(parser.Database)} cannot be null or empty");
     }
 
     /// <inheritdoc />

@@ -3,6 +3,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 
 namespace Rad.UploadFileManager;
+
 /// <summary>
 /// Sql Server Storage Engine
 /// </summary>
@@ -17,6 +18,10 @@ public sealed class SqlServerStorageEngine : IStorageEngine
     public SqlServerStorageEngine(string connectionString)
     {
         _connectionString = connectionString;
+        // Parse the connection string
+        var parser = new SqlServerConnectionStringParser(connectionString);
+        if (string.IsNullOrEmpty(parser.Database))
+            throw new ArgumentException($"{nameof(parser.Database)} cannot be null or empty");
     }
 
     /// <inheritdoc />
