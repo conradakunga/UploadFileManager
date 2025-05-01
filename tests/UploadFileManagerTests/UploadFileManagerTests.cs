@@ -5,7 +5,7 @@ using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
 
-[Trait("Type", "Unit")]
+[Trait("Type", "Behaviour")]
 public class UploadFileManagerTests
 {
     [Fact]
