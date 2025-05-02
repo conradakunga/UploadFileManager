@@ -7,6 +7,9 @@ public class InMemoryStorageEngine : IStorageEngine
     // In-memory store for files and metadata
     private readonly ConcurrentDictionary<Guid, (FileMetadata MetaData, MemoryStream Stream)> _files;
 
+    /// <inheritdoc />
+    public int TimeoutInMinutes => 0;
+
     /// <summary>
     /// Constructor
     /// </summary>

@@ -6,6 +6,11 @@ namespace Rad.UploadFileManager;
 public interface IStorageEngine
 {
     /// <summary>
+    /// How long to wait before a timeout (in minutes)
+    /// </summary>
+    int TimeoutInMinutes { get; }
+
+    /// <summary>
     /// Persist the file
     /// </summary>
     /// <param name="metaData"></param>

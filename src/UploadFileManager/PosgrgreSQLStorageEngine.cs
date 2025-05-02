@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Rad.UploadFileManager;
 
@@ -9,14 +10,19 @@ namespace Rad.UploadFileManager;
 /// </summary>
 public sealed class PosgrgreSQLStorageEngine : IStorageEngine
 {
+    /// <inheritdoc/> 
+    public int TimeoutInMinutes { get; }
+
     private readonly string _connectionString;
 
     /// <summary>
     /// Constructor, taking the connection string
     /// </summary>
     /// <param name="connectionString"></param>
-    public PosgrgreSQLStorageEngine(string connectionString)
+    /// <param name="timeoutInMinutes"></param>
+    public PosgrgreSQLStorageEngine(string connectionString, int timeoutInMinutes)
     {
+        TimeoutInMinutes = timeoutInMinutes;
         _connectionString = connectionString;
         // Parse the connection string for a database
         var parser = new PostgreSQLConnectionStringParser(connectionString);
@@ -40,23 +46,35 @@ public sealed class PosgrgreSQLStorageEngine : IStorageEngine
                                       @EncryptionAlgorithm, @Hash, @Data
                                   )
                            """;
-        // Create and initialize command
-        var param = new DynamicParameters();
-        param.Add("FileID", metaData.FileId, DbType.Guid);
-        param.Add("Name", metaData.Name, DbType.String, size: 500);
-        param.Add("Extension", metaData.Extension, DbType.String, size: 10);
-        param.Add("DateUploaded", metaData.DateUploaded, DbType.DateTime2);
-        param.Add("OriginalSize", metaData.OriginalSize, DbType.Int32);
-        param.Add("PersistedSize", metaData.PersistedSize, DbType.Int32);
-        param.Add("CompressionAlgorithm", metaData.CompressionAlgorithm, DbType.Byte);
-        param.Add("EncryptionAlgorithm", metaData.EncryptionAlgorithm, DbType.Byte);
-        param.Add("Hash", metaData.Hash, dbType: DbType.Binary, size: 32);
-        param.Add("Data", data, DbType.Binary, size: -1);
-        var command = new CommandDefinition(sql, param, cancellationToken: cancellationToken);
-        await using (var cn = new NpgsqlConnection(_connectionString))
+        await using var cn = new NpgsqlConnection(_connectionString);
+        await cn.OpenAsync(cancellationToken);
+
+        await using var cmd = new NpgsqlCommand(sql, cn);
+        cmd.CommandTimeout = (int)TimeSpan.FromMinutes(TimeoutInMinutes).TotalSeconds;
+
+        // Add normal parameters
+        cmd.Parameters.AddWithValue("@FileId", NpgsqlDbType.Uuid, metaData.FileId);
+        cmd.Parameters.AddWithValue("@Name", NpgsqlDbType.Varchar, metaData.Name);
+        cmd.Parameters.AddWithValue("@Extension", NpgsqlDbType.Varchar, metaData.Extension);
+        cmd.Parameters.AddWithValue("@DateUploaded", NpgsqlDbType.TimestampTz, metaData.DateUploaded);
+        cmd.Parameters.AddWithValue("@OriginalSize", NpgsqlDbType.Integer, metaData.OriginalSize);
+        cmd.Parameters.AddWithValue("@PersistedSize", NpgsqlDbType.Integer, metaData.PersistedSize);
+        cmd.Parameters.AddWithValue("@CompressionAlgorithm", NpgsqlDbType.Smallint,
+            (byte)metaData.CompressionAlgorithm);
+        cmd.Parameters.AddWithValue("@EncryptionAlgorithm", NpgsqlDbType.Smallint,
+            (byte)metaData.EncryptionAlgorithm);
+        cmd.Parameters.AddWithValue("@Hash", NpgsqlDbType.Bytea, metaData.Hash);
+
+        // Stream parameter
+        data.Position = 0;
+        var dataParam = new NpgsqlParameter("Data", NpgsqlDbType.Bytea)
         {
-            await cn.ExecuteAsync(command);
-        }
+            Value = data,
+            Size = -1
+        };
+        cmd.Parameters.Add(dataParam);
+
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
 
         return metaData;
     }
@@ -80,13 +98,36 @@ public sealed class PosgrgreSQLStorageEngine : IStorageEngine
     {
         // Query to fetch file
         const string sql = "SELECT Data FROM Files where FileId = @FileId";
-        // Create and initialize command
-        var command = new CommandDefinition(sql, new { FileId = fileId }, cancellationToken: cancellationToken);
+
         await using (var cn = new NpgsqlConnection(_connectionString))
         {
-            var result = await cn.QuerySingleAsync<byte[]>(command);
-            return new MemoryStream(result);
+            await cn.OpenAsync(cancellationToken);
+
+            await using (var cmd = new NpgsqlCommand(sql, cn))
+            {
+                // Increase the timout in case of large files
+                cmd.CommandTimeout = (int)TimeSpan.FromMinutes(5).TotalSeconds;
+                cmd.Parameters.AddWithValue("FileID", fileId);
+
+                await using (var reader =
+                             await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken))
+                {
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        var memoryStream = new MemoryStream();
+                        await using (var dataStream =
+                                     await reader.GetStreamAsync(0, cancellationToken).ConfigureAwait(false))
+                            await dataStream.CopyToAsync(memoryStream, Constants.DefaultBufferSize, cancellationToken);
+
+                        memoryStream.Position = 0;
+
+                        return memoryStream;
+                    }
+                }
+            }
         }
+
+        throw new FileNotFoundException($"The file '{fileId}' was not found");
     }
 
     /// <inheritdoc />

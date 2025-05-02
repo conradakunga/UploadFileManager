@@ -12,6 +12,7 @@ public static class StreamExtensions
         using (var memoryStream = new MemoryStream())
         {
             stream.CopyTo(memoryStream);
+            // Reset the stream position
             stream.Position = 0;
             return memoryStream.ToArray();
         }

@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Npgsql;
 
 namespace Rad.UploadFileManager;

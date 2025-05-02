@@ -49,6 +49,14 @@ public sealed class UploadFileManager : IUploadFileManager
         // Now carry out the work
         //
 
+        // Get a SHA256 hash of the original contents
+        byte[] hash;
+        using (var sha = SHA256.Create())
+            hash = await sha.ComputeHashAsync(data, cancellationToken);
+        
+        // Reset the position
+        data.Position = 0;
+
         // Compress the data
         var compressed = _fileCompressor.Compress(data);
 
@@ -57,13 +65,11 @@ public sealed class UploadFileManager : IUploadFileManager
 
         // Build the metadata
         var fileID = Guid.CreateVersion7();
-        var currentTime = _timeProvider.GetLocalNow().DateTime;
-        byte[] hash;
+        var currentTime = _timeProvider.GetLocalNow();
 
-        // Get a SHA256 hash of the original contents
-        using (var sha = SHA256.Create())
-            hash = await sha.ComputeHashAsync(data, cancellationToken);
 
+        // Reset the position
+        data.Position = 0;
         // Construct the metadata object
         var metadata = new FileMetadata
         {

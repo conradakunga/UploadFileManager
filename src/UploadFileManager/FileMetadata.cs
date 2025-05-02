@@ -23,7 +23,7 @@ public sealed record FileMetadata
     /// <summary>
     ///  Date and time of storage
     /// </summary>
-    public required DateTime DateUploaded { get; init; }
+    public required DateTimeOffset DateUploaded { get; init; }
 
     /// <summary>
     /// Original file size
@@ -48,5 +48,5 @@ public sealed record FileMetadata
     /// <summary>
     /// SHA256 hash of the file
     /// </summary>
-    public required byte[] Hash { get; set; }
+    public required byte[] Hash { get; init; }
 }

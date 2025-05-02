@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Bogus;
 using FluentAssertions;
@@ -41,6 +42,55 @@ public class GZipCompressorTests
         originalData.Should().Be(decompressedData);
         // Check the compression mode
         _gzipCompressor.CompressionAlgorithm.Should().Be(CompressionAlgorithm.Zip);
+    }
+
+    [Theory]
+    [InlineData(256)]
+    [InlineData(512)]
+    [InlineData(1_024)]
+    public async Task Large_File_Compression_Succeeds(int size)
+    {
+        var fileSizeInBytes = 1L * size * 1_024 * 1_024;
+        const int bufferSize = 1024 * 1024;
+
+        byte[] buffer = new byte[bufferSize];
+        new Random().NextBytes(buffer);
+
+        var filePath = Path.GetTempFileName();
+        await using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            long bytesWritten = 0;
+            while (bytesWritten < fileSizeInBytes)
+            {
+                long bytesToWrite = Math.Min(bufferSize, fileSizeInBytes - bytesWritten);
+                await fs.WriteAsync(buffer.AsMemory(0, (int)bytesToWrite));
+                bytesWritten += bytesToWrite;
+            }
+        }
+
+        using (var sha = SHA256.Create())
+        {
+            await using (var input = File.OpenRead(filePath))
+            {
+                // Compute the hash of the uncompressed data
+                var originalHash = await sha.ComputeHashAsync(input);
+                // Reset the input position!
+                input.Position = 0;
+                // Compress the stream
+                await using (var compressed = _gzipCompressor.Compress(input))
+                {
+                    await using (var decompressed = _gzipCompressor.Decompress(compressed))
+                    {
+                        // Compute the hash for the compressed ata
+                        var currentHash = await sha.ComputeHashAsync(decompressed);
+                        // Compare original and current hashes
+                        currentHash.Should().BeEquivalentTo(originalHash);
+                    }
+                }
+            }
+        }
+
+        File.Delete(filePath);
     }
 
     [Fact]

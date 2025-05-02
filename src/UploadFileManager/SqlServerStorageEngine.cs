@@ -9,14 +9,19 @@ namespace Rad.UploadFileManager;
 /// </summary>
 public sealed class SqlServerStorageEngine : IStorageEngine
 {
+    /// <inheritdoc />
+    public int TimeoutInMinutes { get; }
+
     private readonly string _connectionString;
 
     /// <summary>
     /// Constructor, taking the connection string
     /// </summary>
     /// <param name="connectionString"></param>
-    public SqlServerStorageEngine(string connectionString)
+    /// <param name="timeoutInMinutes"></param>
+    public SqlServerStorageEngine(string connectionString, int timeoutInMinutes)
     {
+        TimeoutInMinutes = timeoutInMinutes;
         _connectionString = connectionString;
         // Parse the connection string
         var parser = new SqlServerConnectionStringParser(connectionString);
@@ -40,23 +45,37 @@ public sealed class SqlServerStorageEngine : IStorageEngine
                                       @EncryptionAlgorithm, @Hash, @Data
                                   )
                            """;
-        // Create and initialize command
-        var param = new DynamicParameters();
-        param.Add("FileID", metaData.FileId, DbType.Guid);
-        param.Add("Name", metaData.Name, DbType.String, size: 500);
-        param.Add("Extension", metaData.Extension, DbType.String, size: 10);
-        param.Add("DateUploaded", metaData.DateUploaded, DbType.DateTime2);
-        param.Add("OriginalSize", metaData.OriginalSize, DbType.Int32);
-        param.Add("PersistedSize", metaData.PersistedSize, DbType.Int32);
-        param.Add("CompressionAlgorithm", metaData.CompressionAlgorithm, DbType.Byte);
-        param.Add("EncryptionAlgorithm", metaData.EncryptionAlgorithm, DbType.Byte);
-        param.Add("Hash", metaData.Hash, dbType: DbType.Binary, size: 32);
-        param.Add("Data", data, DbType.Binary, size: -1);
-        var command = new CommandDefinition(sql, param, cancellationToken: cancellationToken);
-        await using (var cn = new SqlConnection(_connectionString))
+        data.Position = 0;
+
+        // Set up command
+        await using var cn = new SqlConnection(_connectionString);
+        await cn.OpenAsync(cancellationToken);
+
+        await using var cmd = new SqlCommand(sql, cn);
+        cmd.CommandTimeout = (int)TimeSpan.FromMinutes(TimeoutInMinutes).TotalSeconds;
+
+        cmd.Parameters.Add(new SqlParameter("@FileID", SqlDbType.UniqueIdentifier) { Value = metaData.FileId });
+        cmd.Parameters.Add(new SqlParameter("@Name", SqlDbType.NVarChar, 500) { Value = metaData.Name });
+        cmd.Parameters.Add(new SqlParameter("@Extension", SqlDbType.NVarChar, 10) { Value = metaData.Extension });
+        cmd.Parameters.Add(
+            new SqlParameter("@DateUploaded", SqlDbType.DateTimeOffset) { Value = metaData.DateUploaded });
+        cmd.Parameters.Add(new SqlParameter("@OriginalSize", SqlDbType.Int) { Value = metaData.OriginalSize });
+        cmd.Parameters.Add(new SqlParameter("@PersistedSize", SqlDbType.Int) { Value = metaData.PersistedSize });
+        cmd.Parameters.Add(new SqlParameter("@CompressionAlgorithm", SqlDbType.TinyInt)
+            { Value = metaData.CompressionAlgorithm });
+        cmd.Parameters.Add(new SqlParameter("@EncryptionAlgorithm", SqlDbType.TinyInt)
+            { Value = metaData.EncryptionAlgorithm });
+        cmd.Parameters.Add(new SqlParameter("@Hash", SqlDbType.Binary, 32) { Value = metaData.Hash });
+
+        var dataParam = new SqlParameter("@Data", SqlDbType.VarBinary, -1)
         {
-            await cn.ExecuteAsync(command);
-        }
+            Value = data,
+            Direction = ParameterDirection.Input
+        };
+        cmd.Parameters.Add(dataParam);
+
+        // Execute
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
 
         return metaData;
     }
@@ -78,15 +97,37 @@ public sealed class SqlServerStorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<Stream> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        // Query to fetch file
-        const string sql = "SELECT Data FROM Files where FileId = @FileId";
-        // Create and initialize command
-        var command = new CommandDefinition(sql, new { FileId = fileId }, cancellationToken: cancellationToken);
+        const string sql = "SELECT Data FROM Files WHERE FileId = @FileId";
+
         await using (var cn = new SqlConnection(_connectionString))
         {
-            var result = await cn.QuerySingleAsync<byte[]>(command);
-            return new MemoryStream(result);
+            await cn.OpenAsync(cancellationToken);
+
+            await using (var cmd = new SqlCommand(sql, cn))
+            {
+                // Increase the timout in case of large files
+                cmd.CommandTimeout = (int)TimeSpan.FromMinutes(TimeoutInMinutes).TotalSeconds;
+                cmd.Parameters.AddWithValue("@FileId", fileId);
+
+                await using (var reader =
+                             await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken))
+                {
+                    if (await reader.ReadAsync(cancellationToken))
+                    {
+                        var memoryStream = new MemoryStream();
+
+                        await using (var dataStream = reader.GetStream(0))
+                            await dataStream.CopyToAsync(memoryStream, Constants.DefaultBufferSize, cancellationToken);
+
+                        memoryStream.Position = 0;
+
+                        return memoryStream;
+                    }
+                }
+            }
         }
+
+        throw new FileNotFoundException($"The file '{fileId}' was not found");
     }
 
     /// <inheritdoc />

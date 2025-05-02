@@ -29,7 +29,7 @@ public class SqlServerStorageEngineTests
 
         // Create the storage engine
         var storageEngine =
-            new SqlServerStorageEngine(fixture.Container.GetConnectionString());
+            new SqlServerStorageEngine(fixture.Container.GetConnectionString(), 5);
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
@@ -39,6 +39,55 @@ public class SqlServerStorageEngineTests
         _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
     }
 
+    [Theory]
+    [InlineData(16)]
+    [InlineData(32)]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    [InlineData(512)]
+    [InlineData(1_024)]
+    public async Task Large_File_Upload_And_Download_Succeeds(int size)
+    {
+        // Compute the file size in bytes
+        var fileSizeInBytes = 1L * size * 1_024 * 1_024;
+        // Create a buffer
+        const int bufferSize = 1024 * 1024;
+
+        byte[] buffer = new byte[bufferSize];
+        new Random().NextBytes(buffer);
+
+        // Write to a temporary file
+        var filePath = Path.GetTempFileName();
+        await using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            long bytesWritten = 0;
+            while (bytesWritten < fileSizeInBytes)
+            {
+                long bytesToWrite = Math.Min(bufferSize, fileSizeInBytes - bytesWritten);
+                await fs.WriteAsync(buffer.AsMemory(0, (int)bytesToWrite));
+                bytesWritten += bytesToWrite;
+            }
+        }
+
+        // Read the file
+        await using (var input = File.OpenRead(filePath))
+        {
+            // Upload the file
+            var uploadMetadata = await Upload(input);
+            // Download the file
+            await using (var download = await _manager.DownloadFileAsync(uploadMetadata.FileId))
+            {
+                download.Position = 0;
+                // Get the Hash
+                var sha = SHA256.Create();
+                var currentHash = await sha.ComputeHashAsync(download);
+                currentHash.Should().BeEquivalentTo(uploadMetadata.Hash);
+            }
+        }
+
+        File.Delete(filePath);
+    }
 
     private static MemoryStream GetFile()
     {
@@ -48,7 +97,7 @@ public class SqlServerStorageEngineTests
         return dataToStoreStream;
     }
 
-    private async Task<FileMetadata> Upload(MemoryStream data)
+    private async Task<FileMetadata> Upload(Stream data)
     {
         return await _manager.UploadFileAsync("Test.txt", ".txt", data, CancellationToken.None);
     }

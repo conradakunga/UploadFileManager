@@ -15,7 +15,7 @@ IF NOT EXISTS (SELECT *
         FileID               UNIQUEIDENTIFIER PRIMARY KEY NOT NULL,
         Name                 NVARCHAR(500)                NOT NULL,
         Extension            NVARCHAR(10)                 NOT NULL,
-        DateUploaded         DATETIME2                    NOT NULL,
+        DateUploaded         DATETIMEOFFSET               NOT NULL,
         OriginalSize         INT                          NOT NULL,
         PersistedSize        INT                          NOT NULL,
         CompressionAlgorithm TINYINT                      NOT NULL,

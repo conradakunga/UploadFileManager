@@ -1,4 +1,5 @@
-DO $$
+DO
+$$
     DECLARE
         -- Change this to your desired table name
         table_name text := 'files';
@@ -22,5 +23,6 @@ DO $$
                    CREATE INDEX IF NOT EXISTS ix_%I_metadata
     ON public.%I (fileid)
     INCLUDE (name, extension, dateuploaded, originalsize, persistedsize, compressionalgorithm, encryptionalgorithm, hash);
-                   ', table_name,table_name);
-    END $$;
+                   ', table_name, table_name);
+    END
+$$;
