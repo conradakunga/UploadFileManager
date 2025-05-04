@@ -4,7 +4,7 @@ using Testcontainers.PostgreSql;
 
 namespace UploadFileManagerTests;
 
-public sealed class PostgreSQLContainerFixture : IAsyncLifetime
+public sealed class PostgreSqlContainerFixture : IAsyncLifetime
 {
     // Instance of the database
     public readonly PostgreSqlContainer Container = new PostgreSqlBuilder()

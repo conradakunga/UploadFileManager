@@ -9,11 +9,11 @@ namespace UploadFileManagerTests;
 
 [Trait("Type", "Integration")]
 [Collection("PostgreSQL Collection")]
-public class PostgreSQLStorageEngineTests
+public class PostgreSqlStorageEngineTests
 {
     private readonly UploadFileManager _manager;
 
-    public PostgreSQLStorageEngineTests(PostgreSQLContainerFixture fixture)
+    public PostgreSqlStorageEngineTests(PostgreSqlContainerFixture fixture)
     {
         var compressor = new GZipCompressor();
 
@@ -28,7 +28,7 @@ public class PostgreSQLStorageEngineTests
 
         // Create the storage engine
         var storageEngine =
-            new PosgrgreSQLStorageEngine(fixture.Container.GetConnectionString(), 5);
+            new PostgreSqlStorageEngine(fixture.Container.GetConnectionString(), 5);
 
         // Create the time provider
         var timeProvider = new FakeTimeProvider();
@@ -58,6 +58,8 @@ public class PostgreSQLStorageEngineTests
     [InlineData(128)]
     [InlineData(256)]
     [InlineData(512)]
+    [InlineData(1_000)]
+    [InlineData(1_001)]
     [InlineData(1_024)]
     public async Task Large_File_Upload_And_Download_Succeeds(int size)
     {

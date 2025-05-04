@@ -4,7 +4,7 @@ using Rad.UploadFileManager;
 namespace UploadFileManagerTests;
 
 [Trait("Type", "Unit")]
-public class PostgreSQLConnectionStringParserTests
+public class PostgreSqlConnectionStringParserTests
 {
     [Theory]
     [InlineData("host=server;username=login;Password=pass;Database=database", "database")]
@@ -15,7 +15,7 @@ public class PostgreSQLConnectionStringParserTests
     [InlineData("host=server;username=login;Password=pass;", null)]
     public void Database_Name_Is_Parsed(string connectionString, string? databaseName)
     {
-        var parser = new PostgreSQLConnectionStringParser(connectionString);
+        var parser = new PostgreSqlConnectionStringParser(connectionString);
         parser.Database.Should().Be(databaseName);
     }
 }

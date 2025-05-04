@@ -2,11 +2,11 @@ using Npgsql;
 
 namespace Rad.UploadFileManager;
 
-public sealed class PostgreSQLConnectionStringParser
+public sealed class PostgreSqlConnectionStringParser
 {
     private readonly string _connectionString;
 
-    public PostgreSQLConnectionStringParser(string connectionString)
+    public PostgreSqlConnectionStringParser(string connectionString)
     {
         _connectionString = connectionString;
     }

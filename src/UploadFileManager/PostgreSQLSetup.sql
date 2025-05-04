@@ -15,7 +15,8 @@ $$
             compressionalgorithm SMALLINT         NOT NULL,
             encryptionalgorithm  SMALLINT         NOT NULL,
             hash                 BYTEA            NOT NULL,
-            data                 BYTEA
+            data                 BYTEA            NOT NULL,
+            loid                 OID              NULL 
         );
     ', table_name);
 
@@ -23,6 +24,12 @@ $$
                    CREATE INDEX IF NOT EXISTS ix_%I_metadata
     ON public.%I (fileid)
     INCLUDE (name, extension, dateuploaded, originalsize, persistedsize, compressionalgorithm, encryptionalgorithm, hash);
+                   ', table_name, table_name);
+
+        EXECUTE format('
+                   CREATE INDEX IF NOT EXISTS ix_%I_large_object_metadata
+    ON public.%I (fileid)
+    INCLUDE (loid);
                    ', table_name, table_name);
     END
 $$;

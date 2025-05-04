@@ -15,7 +15,7 @@ public sealed class SqlServerStorageEngine : IStorageEngine
     private readonly string _connectionString;
 
     /// <summary>
-    /// Constructor, taking the connection string
+    /// Constructor, taking the connection string and timeout
     /// </summary>
     /// <param name="connectionString"></param>
     /// <param name="timeoutInMinutes"></param>
