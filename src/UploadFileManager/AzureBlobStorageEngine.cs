@@ -1,5 +1,6 @@
+using System.Text;
 using System.Text.Json;
-using Azure.Identity;
+using Azure.Storage;
 using Azure.Storage.Blobs;
 
 namespace Rad.UploadFileManager;
@@ -12,22 +13,25 @@ public class AzureBlobStorageEngine : IStorageEngine
     /// <inheritdoc />
     public int TimeoutInMinutes { get; }
 
-    public AzureBlobStorageEngine(int timeoutInMinutes, string account,
+    public AzureBlobStorageEngine(int timeoutInMinutes, string accountName, string accountKey, string azureLocation,
         string dataContainerName, string metadataContainerName)
     {
         TimeoutInMinutes = timeoutInMinutes;
 
         // Create a service client
         var blobServiceClient = new BlobServiceClient(
-            new Uri($"https://{account}.blob.core.windows.net"),
-            new DefaultAzureCredential());
+            new Uri($"{azureLocation}/{accountName}/"),
+            new StorageSharedKeyCredential(accountName, accountKey));
 
-        // Create container clients
-        _dataContainerClient = blobServiceClient.CreateBlobContainer(dataContainerName);
-        _metadataContainerClient = blobServiceClient.CreateBlobContainer(metadataContainerName);
+        // Get our container clients
+        _dataContainerClient = blobServiceClient.GetBlobContainerClient(dataContainerName);
+        _metadataContainerClient = blobServiceClient.GetBlobContainerClient(metadataContainerName);
+
         // Ensure they exist
-        _dataContainerClient.CreateIfNotExists();
-        _metadataContainerClient.CreateIfNotExists();
+        if (!_dataContainerClient.Exists())
+            _dataContainerClient.CreateIfNotExists();
+        if (!_metadataContainerClient.Exists())
+            _metadataContainerClient.CreateIfNotExists();
     }
 
 
@@ -41,8 +45,11 @@ public class AzureBlobStorageEngine : IStorageEngine
 
         // Upload data in parallel
         await Task.WhenAll(
-            metadataClient.UploadAsync(JsonSerializer.Serialize(metaData), cancellationToken),
+            metadataClient.UploadAsync(new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(metaData))),
+                cancellationToken),
             dataClient.UploadAsync(data, cancellationToken));
+
+        data.Position = 0;
 
         return metaData;
     }
@@ -76,7 +83,10 @@ public class AzureBlobStorageEngine : IStorageEngine
         await using (var stream = response.Value.Content)
         {
             var memoryStream = new MemoryStream();
+            // Copy to memory stream
             await stream.CopyToAsync(memoryStream, cancellationToken);
+            // Reset position
+            memoryStream.Position = 0;
             return memoryStream;
         }
     }
