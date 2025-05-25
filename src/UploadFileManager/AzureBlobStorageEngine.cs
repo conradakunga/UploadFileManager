@@ -26,12 +26,34 @@ public class AzureBlobStorageEngine : IStorageEngine
         // Get our container clients
         _dataContainerClient = blobServiceClient.GetBlobContainerClient(dataContainerName);
         _metadataContainerClient = blobServiceClient.GetBlobContainerClient(metadataContainerName);
+    }
+
+    /// <summary>
+    /// Initialize the engine
+    /// </summary>
+    /// <param name="accountName"></param>
+    /// <param name="accountKey"></param>
+    /// <param name="azureLocation"></param>
+    /// <param name="dataContainerName"></param>
+    /// <param name="metadataContainerName"></param>
+    /// <param name="cancellationToken"></param>
+    public async Task InitializeAsync(string accountName, string accountKey, string azureLocation,
+        string dataContainerName, string metadataContainerName, CancellationToken cancellationToken = default)
+    {
+        // Create a service client
+        var blobServiceClient = new BlobServiceClient(
+            new Uri($"{azureLocation}/{accountName}/"),
+            new StorageSharedKeyCredential(accountName, accountKey));
+
+        // Get our container clients
+        var dataContainerClient = blobServiceClient.GetBlobContainerClient(dataContainerName);
+        var metadataContainerClient = blobServiceClient.GetBlobContainerClient(metadataContainerName);
 
         // Ensure they exist
-        if (!_dataContainerClient.Exists())
-            _dataContainerClient.CreateIfNotExists();
-        if (!_metadataContainerClient.Exists())
-            _metadataContainerClient.CreateIfNotExists();
+        if (!await dataContainerClient.ExistsAsync(cancellationToken))
+            await dataContainerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+        if (!await metadataContainerClient.ExistsAsync(cancellationToken))
+            await metadataContainerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
     }
 
 

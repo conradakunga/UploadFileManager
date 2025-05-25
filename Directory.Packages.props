@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageVersion Include="AwesomeAssertions" Version="8.1.0" />
     <PackageVersion Include="AwesomeAssertions.Analyzers" Version="0.34.2" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.0.7" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.24.0" />
     <PackageVersion Include="Bogus" Version="35.6.3" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4">

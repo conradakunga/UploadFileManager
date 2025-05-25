@@ -4,6 +4,7 @@
         <RootNamespace>Rad.UploadFileManager</RootNamespace>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="AWSSDK.S3" />
         <PackageReference Include="Azure.Storage.Blobs" />
         <PackageReference Include="Dapper"/>
         <PackageReference Include="Microsoft.Data.SqlClient"/>
