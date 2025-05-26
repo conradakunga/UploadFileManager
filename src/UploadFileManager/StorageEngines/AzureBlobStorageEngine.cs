@@ -100,6 +100,11 @@ public class AzureBlobStorageEngine : IStorageEngine
         // Get the client
         var metadataClient = _metadataContainerClient.GetBlobClient(fileId.ToString());
 
+        if (!await metadataClient.ExistsAsync(cancellationToken))
+        {
+            throw new FileNotFoundException($"File {fileId} not found");
+        }
+
         // Retrieve the metadata
         var result = await metadataClient.DownloadContentAsync(cancellationToken: cancellationToken);
         if (result != null && result.HasValue)
@@ -116,9 +121,14 @@ public class AzureBlobStorageEngine : IStorageEngine
         // Initialize
         await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
             cancellationToken);
-        
+
         // Get the client
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
+
+        if (!await FileExistsAsync(fileId, cancellationToken))
+        {
+            throw new FileNotFoundException($"File {fileId} not found");
+        }
 
         // Download the blob as a stream
         var response = await dataClient.DownloadStreamingAsync(cancellationToken: cancellationToken);
@@ -141,10 +151,15 @@ public class AzureBlobStorageEngine : IStorageEngine
         // Initialize
         await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
             cancellationToken);
-        
+
         // Get the clients
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
         var metadataClient = _metadataContainerClient.GetBlobClient(fileId.ToString());
+
+        if (!await FileExistsAsync(fileId, cancellationToken))
+        {
+            throw new FileNotFoundException($"File {fileId} not found");
+        }
 
         // Delete in parallel
         await Task.WhenAll(
@@ -158,7 +173,7 @@ public class AzureBlobStorageEngine : IStorageEngine
         // Initialize
         await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
             cancellationToken);
-        
+
         // Get the client
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
         // Check for existence
