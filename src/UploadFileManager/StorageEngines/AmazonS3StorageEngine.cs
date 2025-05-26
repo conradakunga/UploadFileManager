@@ -64,6 +64,9 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     public async Task<FileMetadata> StoreFileAsync(FileMetadata metaData, Stream data,
         CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(cancellationToken);
+
         // Upload the data and the metadata in parallel
         await Task.WhenAll(
             _utility.UploadAsync(new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(metaData))),
@@ -76,6 +79,9 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<FileMetadata> GetMetadataAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(cancellationToken);
+
         //Verify file exists
         if (!await FileExistsAsync(fileId, _metadataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -103,6 +109,9 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<Stream> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(cancellationToken);
+
         //Verify file exists
         if (!await FileExistsAsync(fileId, _dataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -127,6 +136,9 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task DeleteFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(cancellationToken);
+
         //Verify file exists
         if (!await FileExistsAsync(fileId, _dataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -140,6 +152,9 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<bool> FileExistsAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(cancellationToken);
+
         return await FileExistsAsync(fileId, _dataContainerName, cancellationToken);
     }
 
@@ -155,10 +170,10 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
         {
             if (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new FileNotFoundException($"File {fileId} not found");
+                return false;
             }
 
-            return false;
+            throw;
         }
     }
 }
