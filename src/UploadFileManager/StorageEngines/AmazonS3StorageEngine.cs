@@ -6,7 +6,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Amazon.S3.Util;
 
-namespace Rad.UploadFileManager;
+namespace Rad.UploadFileManager.StorageEngines;
 
 public sealed class AmazonS3StorageEngine : IStorageEngine
 {

@@ -2,7 +2,7 @@ using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 
-namespace Rad.UploadFileManager;
+namespace Rad.UploadFileManager.StorageEngines;
 
 /// <summary>
 /// Sql Server Storage Engine

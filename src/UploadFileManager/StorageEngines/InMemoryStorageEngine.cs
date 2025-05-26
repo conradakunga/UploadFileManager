@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Rad.UploadFileManager;
+namespace Rad.UploadFileManager.StorageEngines;
 
 public class InMemoryStorageEngine : IStorageEngine
 {

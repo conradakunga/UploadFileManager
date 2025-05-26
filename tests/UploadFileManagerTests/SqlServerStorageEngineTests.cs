@@ -4,6 +4,7 @@ using Bogus;
 using FluentAssertions;
 using Microsoft.Extensions.Time.Testing;
 using Rad.UploadFileManager;
+using Rad.UploadFileManager.StorageEngines;
 
 namespace UploadFileManagerTests;
 

@@ -3,7 +3,7 @@ using System.Text.Json;
 using Azure.Storage;
 using Azure.Storage.Blobs;
 
-namespace Rad.UploadFileManager;
+namespace Rad.UploadFileManager.StorageEngines;
 
 public class AzureBlobStorageEngine : IStorageEngine
 {
