@@ -7,6 +7,11 @@ namespace Rad.UploadFileManager.StorageEngines;
 
 public class AzureBlobStorageEngine : IStorageEngine
 {
+    private readonly string _accountName;
+    private readonly string _accountKey;
+    private readonly string _azureLocation;
+    private readonly string _dataContainerName;
+    private readonly string _metadataContainerName;
     private readonly BlobContainerClient _dataContainerClient;
     private readonly BlobContainerClient _metadataContainerClient;
 
@@ -16,6 +21,11 @@ public class AzureBlobStorageEngine : IStorageEngine
     public AzureBlobStorageEngine(int timeoutInMinutes, string accountName, string accountKey, string azureLocation,
         string dataContainerName, string metadataContainerName)
     {
+        _accountName = accountName;
+        _accountKey = accountKey;
+        _azureLocation = azureLocation;
+        _dataContainerName = dataContainerName;
+        _metadataContainerName = metadataContainerName;
         TimeoutInMinutes = timeoutInMinutes;
 
         // Create a service client
@@ -61,6 +71,10 @@ public class AzureBlobStorageEngine : IStorageEngine
     public async Task<FileMetadata> StoreFileAsync(FileMetadata metaData, Stream data,
         CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
+            cancellationToken);
+
         // Get the clients
         var dataClient = _dataContainerClient.GetBlobClient(metaData.FileId.ToString());
         var metadataClient = _metadataContainerClient.GetBlobClient(metaData.FileId.ToString());
@@ -79,6 +93,10 @@ public class AzureBlobStorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<FileMetadata> GetMetadataAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
+            cancellationToken);
+
         // Get the client
         var metadataClient = _metadataContainerClient.GetBlobClient(fileId.ToString());
 
@@ -95,6 +113,10 @@ public class AzureBlobStorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<Stream> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
+            cancellationToken);
+        
         // Get the client
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
 
@@ -116,6 +138,10 @@ public class AzureBlobStorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task DeleteFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
+            cancellationToken);
+        
         // Get the clients
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
         var metadataClient = _metadataContainerClient.GetBlobClient(fileId.ToString());
@@ -129,6 +155,10 @@ public class AzureBlobStorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<bool> FileExistsAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
+        // Initialize
+        await InitializeAsync(_accountName, _accountKey, _azureLocation, _dataContainerName, _metadataContainerName,
+            cancellationToken);
+        
         // Get the client
         var dataClient = _dataContainerClient.GetBlobClient(fileId.ToString());
         // Check for existence
