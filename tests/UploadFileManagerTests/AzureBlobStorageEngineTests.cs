@@ -9,35 +9,9 @@ using Rad.UploadFileManager.StorageEngines;
 namespace UploadFileManagerTests;
 
 [Trait("Type", "Integration")]
-public class AzureBlobStorageEngineTests
+public class AzureBlobStorageEngineTests : IAsyncLifetime
 {
-    private readonly UploadFileManager _manager;
-
-    public AzureBlobStorageEngineTests()
-    {
-        // Create a file compressor
-        var compressor = new GZipCompressor();
-        //
-        // Create an encryptor
-        //
-
-        // Create Aes object
-        var aes = Aes.Create();
-        // Create the encryptor
-        var encryptor = new AesFileEncryptor(aes.Key, aes.IV);
-
-        // Create the storage engine
-        var storageEngine = new AzureBlobStorageEngine(0, "devstoreaccount1",
-            "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
-            "https://127.0.0.1:10000", "data", "metadata");
-
-        // Create the time provider
-        var timeProvider = new FakeTimeProvider();
-        timeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-
-        // Create the file manager
-        _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
-    }
+    private UploadFileManager _manager;
 
     private static MemoryStream GetFile()
     {
@@ -131,5 +105,36 @@ public class AzureBlobStorageEngineTests
         // Delete a non-existent file id
         var ex = await Record.ExceptionAsync(() => _manager.DeleteFileAsync(Guid.Empty));
         ex.Should().BeOfType<FileNotFoundException>();
+    }
+
+    public async Task InitializeAsync()
+    {
+        // Create a file compressor
+        var compressor = new GZipCompressor();
+        //
+        // Create an encryptor
+        //
+
+        // Create Aes object
+        var aes = Aes.Create();
+        // Create the encryptor
+        var encryptor = new AesFileEncryptor(aes.Key, aes.IV);
+
+        // Create the storage engine
+        var storageEngine = await AzureBlobStorageEngine.InitializeAsync(0, "devstoreaccount1",
+            "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
+            "https://127.0.0.1:10000", "data", "metadata");
+
+        // Create the time provider
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // Create the file manager
+        _manager = new UploadFileManager(storageEngine, encryptor, compressor, timeProvider);
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
     }
 }
