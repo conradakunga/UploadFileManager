@@ -15,7 +15,7 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     private readonly TransferUtility _utility;
     private readonly AmazonS3Client _client;
 
-    public AmazonS3StorageEngine(string username, string password, string amazonLocation, string dataContainerName,
+    private AmazonS3StorageEngine(string username, string password, string amazonLocation, string dataContainerName,
         string metadataContainerName)
     {
         // Configuration for the amazon s3 client
@@ -31,31 +31,57 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
         _utility = new TransferUtility(_client);
     }
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="username"></param>
+    /// <param name="password"></param>
+    /// <param name="amazonLocation"></param>
+    /// <param name="dataContainerName"></param>
+    /// <param name="metadataContainerName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public static async Task<AmazonS3StorageEngine> InitializeAsync(string username, string password,
+        string amazonLocation,
+        string dataContainerName,
+        string metadataContainerName, CancellationToken cancellationToken = default)
     {
+        var engine = new AmazonS3StorageEngine(username, password, amazonLocation, dataContainerName,
+            metadataContainerName);
+
+        // Configuration for the amazon s3 client
+        var config = new AmazonS3Config
+        {
+            ServiceURL = amazonLocation,
+            ForcePathStyle = true
+        };
+
+        var client = new AmazonS3Client(username, password, config);
         // Check if the metadata bucket exists
-        if (!await AmazonS3Util.DoesS3BucketExistV2Async(_client, _metadataContainerName))
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(client, metadataContainerName))
         {
             var request = new PutBucketRequest
             {
-                BucketName = _metadataContainerName,
+                BucketName = metadataContainerName,
                 UseClientRegion = true
             };
 
-            await _client.PutBucketAsync(request, cancellationToken);
+            await client.PutBucketAsync(request, cancellationToken);
         }
 
         // Check if the data bucket exists
-        if (!await AmazonS3Util.DoesS3BucketExistV2Async(_client, _dataContainerName))
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(client, dataContainerName))
         {
             var request = new PutBucketRequest
             {
-                BucketName = _dataContainerName,
+                BucketName = dataContainerName,
                 UseClientRegion = true
             };
 
-            await _client.PutBucketAsync(request, cancellationToken);
+            await client.PutBucketAsync(request, cancellationToken);
         }
+
+        return engine;
     }
 
     public int TimeoutInMinutes => 0;
@@ -64,9 +90,6 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     public async Task<FileMetadata> StoreFileAsync(FileMetadata metaData, Stream data,
         CancellationToken cancellationToken = default)
     {
-        // Initialize
-        await InitializeAsync(cancellationToken);
-
         // Upload the data and the metadata in parallel
         await Task.WhenAll(
             _utility.UploadAsync(new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(metaData))),
@@ -79,9 +102,6 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<FileMetadata> GetMetadataAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        // Initialize
-        await InitializeAsync(cancellationToken);
-
         //Verify file exists
         if (!await FileExistsAsync(fileId, _metadataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -109,9 +129,6 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<Stream> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        // Initialize
-        await InitializeAsync(cancellationToken);
-
         //Verify file exists
         if (!await FileExistsAsync(fileId, _dataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -136,9 +153,6 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task DeleteFileAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        // Initialize
-        await InitializeAsync(cancellationToken);
-
         //Verify file exists
         if (!await FileExistsAsync(fileId, _dataContainerName, cancellationToken))
             throw new FileNotFoundException($"File {fileId} not found");
@@ -152,9 +166,6 @@ public sealed class AmazonS3StorageEngine : IStorageEngine
     /// <inheritdoc />
     public async Task<bool> FileExistsAsync(Guid fileId, CancellationToken cancellationToken = default)
     {
-        // Initialize
-        await InitializeAsync(cancellationToken);
-
         return await FileExistsAsync(fileId, _dataContainerName, cancellationToken);
     }
 
