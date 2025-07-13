@@ -20,6 +20,7 @@
     </PackageVersion>
     <PackageVersion Include="Dapper" Version="2.1.66" />
     <PackageVersion Include="DotNetZip.Original" Version="2025.2.15" />
+    <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.13.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.7.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
