@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Bogus;
-using FluentAssertions;
+using AwesomeAssertions;
 using Rad.UploadFileManager;
 
 namespace UploadFileManagerTests;
